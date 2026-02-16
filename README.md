@@ -1,5 +1,8 @@
 # Mailrify Go SDK
 
+[![CI](https://github.com/Mailrify/mailrify-go/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Mailrify/mailrify-go/actions/workflows/ci.yml)
+[![Release Please](https://github.com/Mailrify/mailrify-go/actions/workflows/release-please.yml/badge.svg?branch=main)](https://github.com/Mailrify/mailrify-go/actions/workflows/release-please.yml)
+
 Official Go SDK for the Mailrify API.
 
 ## Install
