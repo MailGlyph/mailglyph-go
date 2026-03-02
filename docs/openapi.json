@@ -653,6 +653,10 @@
                     "type": "string",
                     "description": "Email body HTML (required if no template)"
                   },
+                  "text": {
+                    "type": "string",
+                    "description": "The plain text version of the message.\nIf not provided, the `body` will be used to generate a plain text version. You can opt out of this behavior by setting value to an empty string."
+                  },
                   "template": {
                     "type": "string",
                     "description": "Template ID to use for this email. When provided, uses the template's subject, body, from, and reply-to settings. You can override these by explicitly providing subject, body, from, or reply fields in the request. Template variables are populated from the data field."
@@ -3149,6 +3153,156 @@
           },
           "404": {
             "description": "Workflow not found"
+          }
+        }
+      }
+    },
+    "/segments/{id}/members": {
+      "post": {
+        "tags": [
+          "Segments"
+        ],
+        "summary": "Add static segment members",
+        "description": "Add contacts to a static segment by email",
+        "operationId": "addStaticSegmentMembers",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "emails"
+                ],
+                "properties": {
+                  "emails": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 500,
+                    "items": {
+                      "type": "string",
+                      "format": "email"
+                    }
+                  }
+                }
+              },
+              "example": {
+                "emails": [
+                  "alice@example.com",
+                  "bob@example.com"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Contacts added to static segment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "added": {
+                      "type": "integer"
+                    },
+                    "notFound": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "email"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Segment not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Segments"
+        ],
+        "summary": "Remove static segment members",
+        "description": "Remove contacts from a static segment by email",
+        "operationId": "removeStaticSegmentMembers",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "emails"
+                ],
+                "properties": {
+                  "emails": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 500,
+                    "items": {
+                      "type": "string",
+                      "format": "email"
+                    }
+                  }
+                }
+              },
+              "example": {
+                "emails": [
+                  "alice@example.com"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Contacts removed from static segment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "removed": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Segment not found"
           }
         }
       }

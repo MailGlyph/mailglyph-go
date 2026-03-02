@@ -46,13 +46,16 @@ func main() {
     ctx := context.Background()
 
     subject := "Welcome!"
-    body := "<h1>Hello {{name}}</h1>"
+    body := "<h1>Hello {{name}}</h1><p>Thanks for joining.</p>"
+    text := "Hello {{name}}\n\nThanks for joining."
 
+    // HTML + explicit text
     sendResult, err := client.Emails.Send(ctx, &mailrify.SendEmailParams{
         To:      "user@example.com",
         From:    "hello@myapp.com",
         Subject: &subject,
         Body:    &body,
+        Text:    &text,
         Data: map[string]interface{}{
             "name": "John",
         },
@@ -61,6 +64,30 @@ func main() {
         panic(err)
     }
     fmt.Println(sendResult.Success)
+
+    // HTML only (backend auto-generates plain text from body)
+    _, err = client.Emails.Send(ctx, &mailrify.SendEmailParams{
+        To:      "user@example.com",
+        From:    "hello@myapp.com",
+        Subject: &subject,
+        Body:    &body,
+    })
+    if err != nil {
+        panic(err)
+    }
+
+    // HTML + text="" (opt out of text/plain part)
+    emptyText := ""
+    _, err = client.Emails.Send(ctx, &mailrify.SendEmailParams{
+        To:      "user@example.com",
+        From:    "hello@myapp.com",
+        Subject: &subject,
+        Body:    &body,
+        Text:    &emptyText,
+    })
+    if err != nil {
+        panic(err)
+    }
 
     verifyResult, err := client.Emails.Verify(ctx, "user@example.com")
     if err != nil {

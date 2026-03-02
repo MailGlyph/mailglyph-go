@@ -27,10 +27,13 @@ type Attachment struct {
 
 // SendEmailParams contains fields for sending transactional emails.
 type SendEmailParams struct {
-	To          interface{}            `json:"to"`
-	From        interface{}            `json:"from"`
-	Subject     *string                `json:"subject,omitempty"`
-	Body        *string                `json:"body,omitempty"`
+	To      interface{} `json:"to"`
+	From    interface{} `json:"from"`
+	Subject *string     `json:"subject,omitempty"`
+	Body    *string     `json:"body,omitempty"`
+	// The plain text version of the message.
+	// If not provided, the `body` will be used to generate a plain text version. You can opt out of this behavior by setting value to an empty string.
+	Text        *string                `json:"text,omitempty"`
 	Template    *string                `json:"template,omitempty"`
 	Data        map[string]interface{} `json:"data,omitempty"`
 	Headers     map[string]string      `json:"headers,omitempty"`

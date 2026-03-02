@@ -31,6 +31,81 @@ func TestEmailsSend_SimpleStringToFrom(t *testing.T) {
 	}
 }
 
+func TestEmailsSend_IncludesTextWhenProvided(t *testing.T) {
+	client, server, captured := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"success":true,"data":{"emails":[],"timestamp":"2026-01-01T00:00:00Z"}}`))
+	}, "sk_test")
+	defer server.Close()
+
+	body := "<p>Hello</p>"
+	text := "Hello"
+	_, err := client.Emails.Send(ctx(), &SendEmailParams{
+		To:   "to@example.com",
+		From: "from@example.com",
+		Body: &body,
+		Text: &text,
+	})
+	if err != nil {
+		t.Fatalf("send failed: %v", err)
+	}
+
+	payload := decodeBody(t, captured.Body)
+	got, ok := payload["text"].(string)
+	if !ok || got != "Hello" {
+		t.Fatalf("expected text to be included as %q, got %+v", "Hello", payload["text"])
+	}
+}
+
+func TestEmailsSend_OmitsTextWhenUnset(t *testing.T) {
+	client, server, captured := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"success":true,"data":{"emails":[],"timestamp":"2026-01-01T00:00:00Z"}}`))
+	}, "sk_test")
+	defer server.Close()
+
+	body := "<p>Hello</p>"
+	_, err := client.Emails.Send(ctx(), &SendEmailParams{
+		To:   "to@example.com",
+		From: "from@example.com",
+		Body: &body,
+	})
+	if err != nil {
+		t.Fatalf("send failed: %v", err)
+	}
+
+	payload := decodeBody(t, captured.Body)
+	if _, exists := payload["text"]; exists {
+		t.Fatalf("expected text to be omitted when unset, got %+v", payload["text"])
+	}
+}
+
+func TestEmailsSend_AllowsEmptyTextString(t *testing.T) {
+	client, server, captured := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"success":true,"data":{"emails":[],"timestamp":"2026-01-01T00:00:00Z"}}`))
+	}, "sk_test")
+	defer server.Close()
+
+	body := "<p>Hello</p>"
+	emptyText := ""
+	_, err := client.Emails.Send(ctx(), &SendEmailParams{
+		To:   "to@example.com",
+		From: "from@example.com",
+		Body: &body,
+		Text: &emptyText,
+	})
+	if err != nil {
+		t.Fatalf("send failed: %v", err)
+	}
+
+	payload := decodeBody(t, captured.Body)
+	got, ok := payload["text"].(string)
+	if !ok || got != "" {
+		t.Fatalf("expected empty text string to be sent, got %+v", payload["text"])
+	}
+}
+
 func TestEmailsSend_ObjectToFrom(t *testing.T) {
 	client, server, captured := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
