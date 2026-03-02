@@ -333,3 +333,19 @@ type ListSegmentContactsResponse struct {
 	PageSize   int       `json:"pageSize"`
 	TotalPages int       `json:"totalPages"`
 }
+
+// StaticSegmentMembersParams contains email addresses for static segment membership updates.
+type StaticSegmentMembersParams struct {
+	Emails []string `json:"emails"`
+}
+
+// AddStaticSegmentMembersResponse contains add-members results.
+type AddStaticSegmentMembersResponse struct {
+	Added    int      `json:"added"`
+	NotFound []string `json:"notFound"`
+}
+
+// RemoveStaticSegmentMembersResponse contains remove-members results.
+type RemoveStaticSegmentMembersResponse struct {
+	Removed int `json:"removed"`
+}

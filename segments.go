@@ -102,3 +102,43 @@ func (s *SegmentsService) ListContacts(ctx context.Context, id string, params *L
 	}
 	return response, nil
 }
+
+// AddMembers adds contacts to a static segment by email.
+func (s *SegmentsService) AddMembers(ctx context.Context, id string, params *StaticSegmentMembersParams) (*AddStaticSegmentMembersResponse, error) {
+	if id == "" {
+		return nil, newValidationError("id is required")
+	}
+	if params == nil {
+		return nil, newValidationError("add members params are required")
+	}
+	if len(params.Emails) == 0 {
+		return nil, newValidationError("emails is required")
+	}
+
+	response := &AddStaticSegmentMembersResponse{}
+	path := "/segments/" + url.PathEscape(id) + "/members"
+	if err := s.client.http.do(ctx, "POST", path, nil, params, response); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+// RemoveMembers removes contacts from a static segment by email.
+func (s *SegmentsService) RemoveMembers(ctx context.Context, id string, params *StaticSegmentMembersParams) (*RemoveStaticSegmentMembersResponse, error) {
+	if id == "" {
+		return nil, newValidationError("id is required")
+	}
+	if params == nil {
+		return nil, newValidationError("remove members params are required")
+	}
+	if len(params.Emails) == 0 {
+		return nil, newValidationError("emails is required")
+	}
+
+	response := &RemoveStaticSegmentMembersResponse{}
+	path := "/segments/" + url.PathEscape(id) + "/members"
+	if err := s.client.http.do(ctx, "DELETE", path, nil, params, response); err != nil {
+		return nil, err
+	}
+	return response, nil
+}

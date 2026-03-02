@@ -303,6 +303,22 @@ func main() {
     }
     _ = members
 
+    added, err := client.Segments.AddMembers(ctx, segment.ID, &mailrify.StaticSegmentMembersParams{
+        Emails: []string{"alice@example.com", "bob@example.com"},
+    })
+    if err != nil {
+        panic(err)
+    }
+    _ = added
+
+    removed, err := client.Segments.RemoveMembers(ctx, segment.ID, &mailrify.StaticSegmentMembersParams{
+        Emails: []string{"bob@example.com"},
+    })
+    if err != nil {
+        panic(err)
+    }
+    _ = removed
+
     if err := client.Segments.Delete(ctx, segment.ID); err != nil {
         panic(err)
     }

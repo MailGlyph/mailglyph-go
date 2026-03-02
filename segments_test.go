@@ -178,3 +178,129 @@ func TestSegmentsListContacts_NotFound(t *testing.T) {
 		t.Fatalf("expected NotFoundError, got %T", err)
 	}
 }
+
+func TestSegmentsAddMembers_Success(t *testing.T) {
+	client, server, captured := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"added":1,"notFound":["missing@example.com"]}`))
+	}, "sk_test")
+	defer server.Close()
+
+	resp, err := client.Segments.AddMembers(ctx(), "seg_static", &StaticSegmentMembersParams{
+		Emails: []string{"member@example.com", "missing@example.com"},
+	})
+	if err != nil {
+		t.Fatalf("add members failed: %v", err)
+	}
+	if resp.Added != 1 || len(resp.NotFound) != 1 || resp.NotFound[0] != "missing@example.com" {
+		t.Fatalf("unexpected response: %+v", resp)
+	}
+	if captured.Method != http.MethodPost || captured.Path != "/segments/seg_static/members" {
+		t.Fatalf("unexpected request: %s %s", captured.Method, captured.Path)
+	}
+	payload := decodeBody(t, captured.Body)
+	emails := payload["emails"].([]interface{})
+	if len(emails) != 2 || emails[0] != "member@example.com" {
+		t.Fatalf("unexpected payload: %+v", payload)
+	}
+}
+
+func TestSegmentsAddMembers_ValidationError(t *testing.T) {
+	client, _, _ := newTestClient(t, func(_ http.ResponseWriter, _ *http.Request) {}, "sk_test")
+
+	_, err := client.Segments.AddMembers(ctx(), "", &StaticSegmentMembersParams{Emails: []string{"a@example.com"}})
+	if err == nil {
+		t.Fatal("expected error for missing id")
+	}
+	var validationErr *ValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("expected ValidationError for missing id, got %T", err)
+	}
+
+	_, err = client.Segments.AddMembers(ctx(), "seg_static", nil)
+	if err == nil {
+		t.Fatal("expected error for nil params")
+	}
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("expected ValidationError for nil params, got %T", err)
+	}
+
+	_, err = client.Segments.AddMembers(ctx(), "seg_static", &StaticSegmentMembersParams{})
+	if err == nil {
+		t.Fatal("expected error for empty emails")
+	}
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("expected ValidationError for empty emails, got %T", err)
+	}
+}
+
+func TestSegmentsRemoveMembers_Success(t *testing.T) {
+	client, server, captured := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"removed":2}`))
+	}, "sk_test")
+	defer server.Close()
+
+	resp, err := client.Segments.RemoveMembers(ctx(), "seg_static", &StaticSegmentMembersParams{
+		Emails: []string{"member1@example.com", "member2@example.com"},
+	})
+	if err != nil {
+		t.Fatalf("remove members failed: %v", err)
+	}
+	if resp.Removed != 2 {
+		t.Fatalf("unexpected response: %+v", resp)
+	}
+	if captured.Method != http.MethodDelete || captured.Path != "/segments/seg_static/members" {
+		t.Fatalf("unexpected request: %s %s", captured.Method, captured.Path)
+	}
+	payload := decodeBody(t, captured.Body)
+	emails := payload["emails"].([]interface{})
+	if len(emails) != 2 || emails[1] != "member2@example.com" {
+		t.Fatalf("unexpected payload: %+v", payload)
+	}
+}
+
+func TestSegmentsRemoveMembers_NotFound(t *testing.T) {
+	client, server, _ := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}, "sk_test")
+	defer server.Close()
+
+	_, err := client.Segments.RemoveMembers(ctx(), "missing", &StaticSegmentMembersParams{Emails: []string{"a@example.com"}})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	var notFoundErr *NotFoundError
+	if !errors.As(err, &notFoundErr) {
+		t.Fatalf("expected NotFoundError, got %T", err)
+	}
+}
+
+func TestSegmentsRemoveMembers_ValidationError(t *testing.T) {
+	client, _, _ := newTestClient(t, func(_ http.ResponseWriter, _ *http.Request) {}, "sk_test")
+
+	_, err := client.Segments.RemoveMembers(ctx(), "", &StaticSegmentMembersParams{Emails: []string{"a@example.com"}})
+	if err == nil {
+		t.Fatal("expected error for missing id")
+	}
+	var validationErr *ValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("expected ValidationError for missing id, got %T", err)
+	}
+
+	_, err = client.Segments.RemoveMembers(ctx(), "seg_static", nil)
+	if err == nil {
+		t.Fatal("expected error for nil params")
+	}
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("expected ValidationError for nil params, got %T", err)
+	}
+
+	_, err = client.Segments.RemoveMembers(ctx(), "seg_static", &StaticSegmentMembersParams{})
+	if err == nil {
+		t.Fatal("expected error for empty emails")
+	}
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("expected ValidationError for empty emails, got %T", err)
+	}
+}
