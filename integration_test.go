@@ -3,10 +3,12 @@
 package mailglyph
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -265,6 +267,7 @@ func TestIntegrationLocalAPI(t *testing.T) {
 
 func loadIntegrationConfig(t *testing.T) (integrationConfig, bool) {
 	t.Helper()
+	loadEnvFromFile(t, ".env")
 
 	cfg := integrationConfig{
 		APIKey:      strings.TrimSpace(os.Getenv("MAILGLYPH_API_KEY")),
@@ -321,4 +324,56 @@ func containsString(values []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func loadEnvFromFile(t *testing.T, name string) {
+	t.Helper()
+
+	path := filepath.Clean(name)
+	file, err := os.Open(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return
+		}
+		t.Fatalf("open %s: %v", path, err)
+	}
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			t.Fatalf("close %s: %v", path, closeErr)
+		}
+	}()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if strings.HasPrefix(line, "export ") {
+			line = strings.TrimSpace(strings.TrimPrefix(line, "export "))
+		}
+
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
+		if key == "" {
+			continue
+		}
+
+		// Keep explicitly exported env vars as source-of-truth.
+		if _, exists := os.LookupEnv(key); exists {
+			continue
+		}
+
+		value = strings.Trim(value, `"'`)
+		if err := os.Setenv(key, value); err != nil {
+			t.Fatalf("set env %s from %s: %v", key, path, err)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
 }
