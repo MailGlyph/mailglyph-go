@@ -1,4 +1,4 @@
-package mailrify
+package mailglyph
 
 import (
 	"errors"
@@ -114,7 +114,7 @@ func TestEmailsSend_ObjectToFrom(t *testing.T) {
 	defer server.Close()
 
 	recipientName := "Jane"
-	senderName := "Mailrify"
+	senderName := "MailGlyph"
 	_, err := client.Emails.Send(ctx(), &SendEmailParams{
 		To:   &Recipient{Name: &recipientName, Email: "jane@example.com"},
 		From: &Recipient{Name: &senderName, Email: "hello@example.com"},

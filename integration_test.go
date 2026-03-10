@@ -1,6 +1,6 @@
 //go:build integration
 
-package mailrify
+package mailglyph
 
 import (
 	"context"
@@ -20,7 +20,7 @@ type integrationConfig struct {
 	MemberEmail string
 }
 
-// TestIntegrationLocalAPI runs end-to-end integration scenarios against a local Mailrify API.
+// TestIntegrationLocalAPI runs end-to-end integration scenarios against a local MailGlyph API.
 func TestIntegrationLocalAPI(t *testing.T) {
 	cfg, ok := loadIntegrationConfig(t)
 	if !ok {
@@ -267,29 +267,29 @@ func loadIntegrationConfig(t *testing.T) (integrationConfig, bool) {
 	t.Helper()
 
 	cfg := integrationConfig{
-		APIKey:      strings.TrimSpace(os.Getenv("MAILRIFY_API_KEY")),
-		PublicKey:   strings.TrimSpace(os.Getenv("MAILRIFY_PUBLIC_KEY")),
-		BaseURL:     strings.TrimSpace(os.Getenv("MAILRIFY_BASE_URL")),
-		TestDomain:  strings.TrimSpace(os.Getenv("MAILRIFY_TEST_DOMAIN")),
-		MemberEmail: strings.TrimSpace(os.Getenv("MAILRIFY_TEST_MEMBER_EMAIL")),
+		APIKey:      strings.TrimSpace(os.Getenv("MAILGLYPH_API_KEY")),
+		PublicKey:   strings.TrimSpace(os.Getenv("MAILGLYPH_PUBLIC_KEY")),
+		BaseURL:     strings.TrimSpace(os.Getenv("MAILGLYPH_BASE_URL")),
+		TestDomain:  strings.TrimSpace(os.Getenv("MAILGLYPH_TEST_DOMAIN")),
+		MemberEmail: strings.TrimSpace(os.Getenv("MAILGLYPH_TEST_MEMBER_EMAIL")),
 	}
 
 	if cfg.APIKey == "" {
-		t.Skip("MAILRIFY_API_KEY is required for integration tests")
+		t.Skip("MAILGLYPH_API_KEY is required for integration tests")
 		return integrationConfig{}, false
 	}
 
 	if cfg.PublicKey == "" {
-		t.Fatal("MAILRIFY_PUBLIC_KEY is required when MAILRIFY_API_KEY is set")
+		t.Fatal("MAILGLYPH_PUBLIC_KEY is required when MAILGLYPH_API_KEY is set")
 	}
 	if cfg.BaseURL == "" {
 		cfg.BaseURL = "http://localhost:8081"
 	}
 	if cfg.TestDomain == "" {
-		t.Fatal("MAILRIFY_TEST_DOMAIN is required when MAILRIFY_API_KEY is set")
+		t.Fatal("MAILGLYPH_TEST_DOMAIN is required when MAILGLYPH_API_KEY is set")
 	}
 	if cfg.MemberEmail == "" {
-		t.Fatal("MAILRIFY_TEST_MEMBER_EMAIL is required when MAILRIFY_API_KEY is set")
+		t.Fatal("MAILGLYPH_TEST_MEMBER_EMAIL is required when MAILGLYPH_API_KEY is set")
 	}
 
 	return cfg, true
@@ -307,9 +307,9 @@ func formatIntegrationErr(err error) string {
 	if err == nil {
 		return ""
 	}
-	var mailrifyErr *MailrifyError
-	if errors.As(err, &mailrifyErr) {
-		return fmt.Sprintf("%v (status=%d, body=%q)", err, mailrifyErr.StatusCode, mailrifyErr.RawBody)
+	var mailglyphErr *MailGlyphError
+	if errors.As(err, &mailglyphErr) {
+		return fmt.Sprintf("%v (status=%d, body=%q)", err, mailglyphErr.StatusCode, mailglyphErr.RawBody)
 	}
 	return err.Error()
 }

@@ -26,6 +26,7 @@ vendor/
 
 # Local integration test environment
 .env.test
+.env
 
 # Docs markdown files
 docs/*.md

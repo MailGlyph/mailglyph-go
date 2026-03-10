@@ -1,4 +1,4 @@
-package mailrify
+package mailglyph
 
 import (
 	"net/http"
@@ -6,11 +6,11 @@ import (
 )
 
 const (
-	defaultBaseURL = "https://api.mailrify.com"
+	defaultBaseURL = "https://api.mailglyph.com"
 	defaultTimeout = 30 * time.Second
 )
 
-// Option configures a Mailrify client.
+// Option configures a MailGlyph client.
 type Option func(*clientOptions)
 
 type clientOptions struct {
@@ -19,7 +19,7 @@ type clientOptions struct {
 	httpClient *http.Client
 }
 
-// Client provides access to Mailrify API resources.
+// Client provides access to MailGlyph API resources.
 type Client struct {
 	config ClientConfig
 	http   *httpClient
@@ -31,7 +31,7 @@ type Client struct {
 	Segments  *SegmentsService
 }
 
-// New creates a new Mailrify client.
+// New creates a new MailGlyph client.
 func New(apiKey string, opts ...Option) *Client {
 	options := &clientOptions{
 		baseURL: defaultBaseURL,
@@ -63,7 +63,7 @@ func New(apiKey string, opts ...Option) *Client {
 	return client
 }
 
-// NewClient creates a new Mailrify client.
+// NewClient creates a new MailGlyph client.
 func NewClient(apiKey string, opts ...Option) *Client {
 	return New(apiKey, opts...)
 }

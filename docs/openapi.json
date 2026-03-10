@@ -1,17 +1,17 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Mailrify API",
+    "title": "MailGlyph API",
     "description": "Email platform API for transactional emails, campaigns, and marketing automation",
     "version": "1.0.0",
     "contact": {
-      "name": "Mailrify Support",
-      "url": "https://mailrify.com"
+      "name": "MailGlyph Support",
+      "url": "https://mailglyph.com"
     }
   },
   "servers": [
     {
-      "url": "https://api.mailrify.com",
+      "url": "https://api.mailglyph.com",
       "description": "Production server"
     }
   ],

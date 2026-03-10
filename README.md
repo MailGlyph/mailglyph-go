@@ -1,14 +1,14 @@
-# Mailrify Go SDK
+# MailGlyph Go SDK
 
-[![CI](https://github.com/Mailrify/mailrify-go/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Mailrify/mailrify-go/actions/workflows/ci.yml)
-[![Release Please](https://github.com/Mailrify/mailrify-go/actions/workflows/release-please.yml/badge.svg?branch=main)](https://github.com/Mailrify/mailrify-go/actions/workflows/release-please.yml)
+[![CI](https://github.com/MailGlyph/mailglyph-go/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/MailGlyph/mailglyph-go/actions/workflows/ci.yml)
+[![Release Please](https://github.com/MailGlyph/mailglyph-go/actions/workflows/release-please.yml/badge.svg?branch=main)](https://github.com/MailGlyph/mailglyph-go/actions/workflows/release-please.yml)
 
-Official Go SDK for the Mailrify API.
+Official Go SDK for the MailGlyph API.
 
 ## Install
 
 ```bash
-go get github.com/Mailrify/mailrify-go
+go get github.com/MailGlyph/mailglyph-go
 ```
 
 ## Initialize
@@ -19,11 +19,11 @@ package main
 import (
     "time"
 
-    mailrify "github.com/Mailrify/mailrify-go"
+    mailglyph "github.com/MailGlyph/mailglyph-go"
 )
 
 func main() {
-    _ = mailrify.New("sk_your_api_key", mailrify.WithTimeout(10*time.Second))
+    _ = mailglyph.New("sk_your_api_key", mailglyph.WithTimeout(10*time.Second))
 }
 ```
 
@@ -38,11 +38,11 @@ import (
     "context"
     "fmt"
 
-    mailrify "github.com/Mailrify/mailrify-go"
+    mailglyph "github.com/MailGlyph/mailglyph-go"
 )
 
 func main() {
-    client := mailrify.New("sk_your_api_key")
+    client := mailglyph.New("sk_your_api_key")
     ctx := context.Background()
 
     subject := "Welcome!"
@@ -50,7 +50,7 @@ func main() {
     text := "Hello {{name}}\n\nThanks for joining."
 
     // HTML + explicit text
-    sendResult, err := client.Emails.Send(ctx, &mailrify.SendEmailParams{
+    sendResult, err := client.Emails.Send(ctx, &mailglyph.SendEmailParams{
         To:      "user@example.com",
         From:    "hello@myapp.com",
         Subject: &subject,
@@ -66,7 +66,7 @@ func main() {
     fmt.Println(sendResult.Success)
 
     // HTML only (backend auto-generates plain text from body)
-    _, err = client.Emails.Send(ctx, &mailrify.SendEmailParams{
+    _, err = client.Emails.Send(ctx, &mailglyph.SendEmailParams{
         To:      "user@example.com",
         From:    "hello@myapp.com",
         Subject: &subject,
@@ -78,7 +78,7 @@ func main() {
 
     // HTML + text="" (opt out of text/plain part)
     emptyText := ""
-    _, err = client.Emails.Send(ctx, &mailrify.SendEmailParams{
+    _, err = client.Emails.Send(ctx, &mailglyph.SendEmailParams{
         To:      "user@example.com",
         From:    "hello@myapp.com",
         Subject: &subject,
@@ -105,14 +105,14 @@ package main
 import (
     "context"
 
-    mailrify "github.com/Mailrify/mailrify-go"
+    mailglyph "github.com/MailGlyph/mailglyph-go"
 )
 
 func main() {
     ctx := context.Background()
 
-    tracker := mailrify.New("pk_your_public_key")
-    _, err := tracker.Events.Track(ctx, &mailrify.TrackEventParams{
+    tracker := mailglyph.New("pk_your_public_key")
+    _, err := tracker.Events.Track(ctx, &mailglyph.TrackEventParams{
         Email: "user@example.com",
         Event: "purchase",
         Data: map[string]interface{}{
@@ -123,7 +123,7 @@ func main() {
         panic(err)
     }
 
-    admin := mailrify.New("sk_your_secret_key")
+    admin := mailglyph.New("sk_your_secret_key")
     names, err := admin.Events.GetNames(ctx)
     if err != nil {
         panic(err)
@@ -140,20 +140,20 @@ package main
 import (
     "context"
 
-    mailrify "github.com/Mailrify/mailrify-go"
+    mailglyph "github.com/MailGlyph/mailglyph-go"
 )
 
 func main() {
-    client := mailrify.New("sk_your_api_key")
+    client := mailglyph.New("sk_your_api_key")
     ctx := context.Background()
 
-    contacts, err := client.Contacts.List(ctx, &mailrify.ListContactsParams{Limit: intPtr(50)})
+    contacts, err := client.Contacts.List(ctx, &mailglyph.ListContactsParams{Limit: intPtr(50)})
     if err != nil {
         panic(err)
     }
     _ = contacts
 
-    contact, err := client.Contacts.Create(ctx, &mailrify.CreateContactParams{
+    contact, err := client.Contacts.Create(ctx, &mailglyph.CreateContactParams{
         Email: "new@example.com",
         Data: map[string]interface{}{"plan": "premium"},
     })
@@ -167,7 +167,7 @@ func main() {
     }
     _ = fetched
 
-    _, err = client.Contacts.Update(ctx, contact.ID, &mailrify.UpdateContactParams{Subscribed: boolPtr(false)})
+    _, err = client.Contacts.Update(ctx, contact.ID, &mailglyph.UpdateContactParams{Subscribed: boolPtr(false)})
     if err != nil {
         panic(err)
     }
@@ -195,14 +195,14 @@ package main
 import (
     "context"
 
-    mailrify "github.com/Mailrify/mailrify-go"
+    mailglyph "github.com/MailGlyph/mailglyph-go"
 )
 
 func main() {
-    client := mailrify.New("sk_your_api_key")
+    client := mailglyph.New("sk_your_api_key")
     ctx := context.Background()
 
-    campaigns, err := client.Campaigns.List(ctx, &mailrify.ListCampaignsParams{
+    campaigns, err := client.Campaigns.List(ctx, &mailglyph.ListCampaignsParams{
         Page: intPtr(1),
         PageSize: intPtr(20),
         Status: strPtr("DRAFT"),
@@ -212,7 +212,7 @@ func main() {
     }
     _ = campaigns
 
-    campaign, err := client.Campaigns.Create(ctx, &mailrify.CreateCampaignParams{
+    campaign, err := client.Campaigns.Create(ctx, &mailglyph.CreateCampaignParams{
         Name:         "Product Launch",
         Subject:      "Introducing our new feature!",
         Body:         "<h1>Big news!</h1><p>Check out our latest feature.</p>",
@@ -224,7 +224,7 @@ func main() {
     }
 
     scheduledFor := "2026-03-01T10:00:00Z"
-    if err := client.Campaigns.Send(ctx, campaign.ID, &mailrify.SendCampaignParams{ScheduledFor: &scheduledFor}); err != nil {
+    if err := client.Campaigns.Send(ctx, campaign.ID, &mailglyph.SendCampaignParams{ScheduledFor: &scheduledFor}); err != nil {
         panic(err)
     }
 
@@ -257,20 +257,20 @@ package main
 import (
     "context"
 
-    mailrify "github.com/Mailrify/mailrify-go"
+    mailglyph "github.com/MailGlyph/mailglyph-go"
 )
 
 func main() {
-    client := mailrify.New("sk_your_api_key")
+    client := mailglyph.New("sk_your_api_key")
     ctx := context.Background()
 
-    segment, err := client.Segments.Create(ctx, &mailrify.CreateSegmentParams{
+    segment, err := client.Segments.Create(ctx, &mailglyph.CreateSegmentParams{
         Name: "Premium Users",
-        Condition: &mailrify.FilterCondition{
+        Condition: &mailglyph.FilterCondition{
             Logic: "AND",
-            Groups: []mailrify.FilterGroup{
+            Groups: []mailglyph.FilterGroup{
                 {
-                    Filters: []mailrify.SegmentFilter{
+                    Filters: []mailglyph.SegmentFilter{
                         {Field: "data.plan", Operator: "equals", Value: "premium"},
                     },
                 },
@@ -292,18 +292,18 @@ func main() {
         panic(err)
     }
 
-    _, err = client.Segments.Update(ctx, segment.ID, &mailrify.UpdateSegmentParams{Name: strPtr("Premium Users v2")})
+    _, err = client.Segments.Update(ctx, segment.ID, &mailglyph.UpdateSegmentParams{Name: strPtr("Premium Users v2")})
     if err != nil {
         panic(err)
     }
 
-    members, err := client.Segments.ListContacts(ctx, segment.ID, &mailrify.ListSegmentContactsParams{Page: intPtr(1), PageSize: intPtr(20)})
+    members, err := client.Segments.ListContacts(ctx, segment.ID, &mailglyph.ListSegmentContactsParams{Page: intPtr(1), PageSize: intPtr(20)})
     if err != nil {
         panic(err)
     }
     _ = members
 
-    added, err := client.Segments.AddMembers(ctx, segment.ID, &mailrify.StaticSegmentMembersParams{
+    added, err := client.Segments.AddMembers(ctx, segment.ID, &mailglyph.StaticSegmentMembersParams{
         Emails: []string{"alice@example.com", "bob@example.com"},
     })
     if err != nil {
@@ -311,7 +311,7 @@ func main() {
     }
     _ = added
 
-    removed, err := client.Segments.RemoveMembers(ctx, segment.ID, &mailrify.StaticSegmentMembersParams{
+    removed, err := client.Segments.RemoveMembers(ctx, segment.ID, &mailglyph.StaticSegmentMembersParams{
         Emails: []string{"bob@example.com"},
     })
     if err != nil {
@@ -338,15 +338,15 @@ import (
     "context"
     "errors"
 
-    mailrify "github.com/Mailrify/mailrify-go"
+    mailglyph "github.com/MailGlyph/mailglyph-go"
 )
 
 func main() {
-    client := mailrify.New("sk_your_api_key")
+    client := mailglyph.New("sk_your_api_key")
 
     _, err := client.Contacts.Get(context.Background(), "missing")
     if err != nil {
-        var notFound *mailrify.NotFoundError
+        var notFound *mailglyph.NotFoundError
         if errors.As(err, &notFound) {
             // Handle 404.
         }

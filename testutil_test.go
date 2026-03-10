@@ -1,4 +1,4 @@
-package mailrify
+package mailglyph
 
 import (
 	"bytes"

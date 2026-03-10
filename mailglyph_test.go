@@ -1,4 +1,4 @@
-package mailrify
+package mailglyph
 
 import (
 	"context"
@@ -56,7 +56,7 @@ func TestHTTPHeaders_BearerAndUserAgent(t *testing.T) {
 	if captured.Auth != "Bearer sk_test" {
 		t.Fatalf("unexpected auth header: %q", captured.Auth)
 	}
-	if !strings.HasPrefix(captured.UserAgent, "mailrify-go/") {
+	if !strings.HasPrefix(captured.UserAgent, "mailglyph-go/") {
 		t.Fatalf("unexpected user agent: %q", captured.UserAgent)
 	}
 	if captured.ContentType != "application/json" {

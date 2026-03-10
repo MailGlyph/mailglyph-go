@@ -1,4 +1,4 @@
-package mailrify
+package mailglyph
 
 import (
 	"bytes"
@@ -52,7 +52,7 @@ func newHTTPClient(cfg ClientConfig, customClient *http.Client) *httpClient {
 		keyType:    detectAPIKeyType(cfg.APIKey),
 		baseURL:    strings.TrimRight(cfg.BaseURL, "/"),
 		client:     client,
-		userAgent:  "mailrify-go/" + Version,
+		userAgent:  "mailglyph-go/" + Version,
 		maxRetries: 3,
 	}
 }
@@ -82,7 +82,7 @@ func (h *httpClient) do(ctx context.Context, method, path string, query url.Valu
 	if body != nil {
 		payload, err = json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("mailrify: encode request body: %w", err)
+			return fmt.Errorf("mailglyph: encode request body: %w", err)
 		}
 	}
 
@@ -94,7 +94,7 @@ func (h *httpClient) do(ctx context.Context, method, path string, query url.Valu
 
 		req, err := http.NewRequestWithContext(ctx, method, requestURL, bodyReader)
 		if err != nil {
-			return fmt.Errorf("mailrify: create request: %w", err)
+			return fmt.Errorf("mailglyph: create request: %w", err)
 		}
 
 		req.Header.Set("Authorization", "Bearer "+h.apiKey)
@@ -107,22 +107,22 @@ func (h *httpClient) do(ctx context.Context, method, path string, query url.Valu
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 				return err
 			}
-			return fmt.Errorf("mailrify: request failed: %w", err)
+			return fmt.Errorf("mailglyph: request failed: %w", err)
 		}
 
 		responseBody, readErr := io.ReadAll(resp.Body)
 		closeErr := resp.Body.Close()
 		if readErr != nil {
-			return fmt.Errorf("mailrify: read response body: %w", readErr)
+			return fmt.Errorf("mailglyph: read response body: %w", readErr)
 		}
 		if closeErr != nil {
-			return fmt.Errorf("mailrify: close response body: %w", closeErr)
+			return fmt.Errorf("mailglyph: close response body: %w", closeErr)
 		}
 
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			if out != nil && resp.StatusCode != http.StatusNoContent && len(responseBody) > 0 {
 				if err := json.Unmarshal(responseBody, out); err != nil {
-					return fmt.Errorf("mailrify: decode response body: %w", err)
+					return fmt.Errorf("mailglyph: decode response body: %w", err)
 				}
 			}
 			return nil
@@ -146,13 +146,13 @@ func (h *httpClient) validateAPIKey(path string) error {
 		case apiKeyTypePublic:
 			return nil
 		case apiKeyTypeSecret:
-			return &AuthenticationError{MailrifyError: &MailrifyError{
+			return &AuthenticationError{MailGlyphError: &MailGlyphError{
 				StatusCode: http.StatusUnauthorized,
 				Type:       "authentication_error",
 				Message:    "public API key (pk_*) is required for /v1/track",
 			}}
 		default:
-			return &AuthenticationError{MailrifyError: &MailrifyError{
+			return &AuthenticationError{MailGlyphError: &MailGlyphError{
 				StatusCode: http.StatusUnauthorized,
 				Type:       "authentication_error",
 				Message:    "invalid API key format: expected pk_* for /v1/track",
@@ -164,13 +164,13 @@ func (h *httpClient) validateAPIKey(path string) error {
 	case apiKeyTypeSecret:
 		return nil
 	case apiKeyTypePublic:
-		return &AuthenticationError{MailrifyError: &MailrifyError{
+		return &AuthenticationError{MailGlyphError: &MailGlyphError{
 			StatusCode: http.StatusUnauthorized,
 			Type:       "authentication_error",
 			Message:    "secret API key (sk_*) is required for this endpoint",
 		}}
 	default:
-		return &AuthenticationError{MailrifyError: &MailrifyError{
+		return &AuthenticationError{MailGlyphError: &MailGlyphError{
 			StatusCode: http.StatusUnauthorized,
 			Type:       "authentication_error",
 			Message:    "invalid API key format: expected sk_* or pk_*",
@@ -181,11 +181,11 @@ func (h *httpClient) validateAPIKey(path string) error {
 func (h *httpClient) buildURL(path string, query url.Values) (string, error) {
 	base, err := url.Parse(h.baseURL)
 	if err != nil {
-		return "", fmt.Errorf("mailrify: invalid base url: %w", err)
+		return "", fmt.Errorf("mailglyph: invalid base url: %w", err)
 	}
 	rel, err := url.Parse(path)
 	if err != nil {
-		return "", fmt.Errorf("mailrify: invalid path: %w", err)
+		return "", fmt.Errorf("mailglyph: invalid path: %w", err)
 	}
 	full := base.ResolveReference(rel)
 	if len(query) > 0 {
@@ -208,7 +208,7 @@ func mapHTTPError(statusCode int, responseBody []byte, headers http.Header) erro
 		message = "request failed"
 	}
 
-	baseErr := &MailrifyError{
+	baseErr := &MailGlyphError{
 		StatusCode: statusCode,
 		Code:       payload.Code,
 		Type:       payload.Type,
@@ -219,16 +219,16 @@ func mapHTTPError(statusCode int, responseBody []byte, headers http.Header) erro
 
 	switch {
 	case statusCode == http.StatusBadRequest:
-		return &ValidationError{MailrifyError: baseErr}
+		return &ValidationError{MailGlyphError: baseErr}
 	case statusCode == http.StatusUnauthorized:
-		return &AuthenticationError{MailrifyError: baseErr}
+		return &AuthenticationError{MailGlyphError: baseErr}
 	case statusCode == http.StatusNotFound:
-		return &NotFoundError{MailrifyError: baseErr}
+		return &NotFoundError{MailGlyphError: baseErr}
 	case statusCode == http.StatusTooManyRequests:
 		retryAfterSeconds := parseRetryAfterSeconds(headers.Get("Retry-After"))
-		return &RateLimitError{MailrifyError: baseErr, RetryAfterSeconds: retryAfterSeconds}
+		return &RateLimitError{MailGlyphError: baseErr, RetryAfterSeconds: retryAfterSeconds}
 	case statusCode >= 500 && statusCode <= 599:
-		return &ApiError{MailrifyError: baseErr}
+		return &ApiError{MailGlyphError: baseErr}
 	default:
 		return baseErr
 	}
