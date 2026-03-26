@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/MailGlyph/mailglyph-go/compare/v1.1.0...v1.2.0) (2026-03-26)
+
+
+### Features
+
+* add Templates resource and update OpenAPI spec with enhanced schemas for Contacts, Templates, and Campaigns ([2e64cb5](https://github.com/MailGlyph/mailglyph-go/commit/2e64cb5257418a8ac8ca72954b649c41105f40d1))
+
 ## [Unreleased]
 
 ### ⚠ BREAKING CHANGES
