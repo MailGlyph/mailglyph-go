@@ -109,5 +109,5 @@ func (s *ContactsService) Count(ctx context.Context, params *ListContactsParams)
 	if response.Total != nil {
 		return *response.Total, nil
 	}
-	return len(response.Contacts), nil
+	return len(response.Data), nil
 }

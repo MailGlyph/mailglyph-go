@@ -176,31 +176,43 @@ func TestCampaignsUpdate_Partial(t *testing.T) {
 
 func TestCampaignsSend_Immediate(t *testing.T) {
 	client, server, captured := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"data":` + campaignFixtureJSON("Launch", "SENDING") + `,"message":"Campaign is sending"}`))
 	}, "sk_test")
 	defer server.Close()
 
-	if err := client.Campaigns.Send(ctx(), "cmp_1", nil); err != nil {
+	resp, err := client.Campaigns.Send(ctx(), "cmp_1", nil)
+	if err != nil {
 		t.Fatalf("send failed: %v", err)
 	}
 	if captured.Path != "/campaigns/cmp_1/send" {
 		t.Fatalf("unexpected path: %s", captured.Path)
 	}
+	if !resp.Success || resp.Data.ID != "cmp_1" || resp.Message == "" {
+		t.Fatalf("unexpected response: %+v", resp)
+	}
 }
 
 func TestCampaignsSend_Scheduled(t *testing.T) {
 	client, server, captured := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"data":` + campaignFixtureJSON("Launch", "SCHEDULED") + `,"message":"Campaign scheduled"}`))
 	}, "sk_test")
 	defer server.Close()
 
 	scheduled := "2026-03-01T10:00:00Z"
-	if err := client.Campaigns.Send(ctx(), "cmp_1", &SendCampaignParams{ScheduledFor: &scheduled}); err != nil {
+	resp, err := client.Campaigns.Send(ctx(), "cmp_1", &SendCampaignParams{ScheduledFor: &scheduled})
+	if err != nil {
 		t.Fatalf("send failed: %v", err)
 	}
 	payload := decodeBody(t, captured.Body)
 	if payload["scheduledFor"] != scheduled {
 		t.Fatalf("unexpected payload: %+v", payload)
+	}
+	if !resp.Success || resp.Data.Status != "SCHEDULED" {
+		t.Fatalf("unexpected response: %+v", resp)
 	}
 }
 

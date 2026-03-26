@@ -26,7 +26,7 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "API Key",
-        "description": "API Key authentication. **Secret keys (sk_*)** are required for all endpoints except `/v1/track`. **Public keys (pk_*)** only work with the `/v1/track` endpoint for client-side event tracking. The project is automatically derived from the key."
+        "description": "API Key authentication. **Secret keys (sk_*)** are required for all endpoints except `/v1/track`. **Public keys (pk_*)** only work with the `/v1/track` endpoint for client-side event tracking. Workspaces can have multiple active keys, and sender-domain operations enforce per-key domain scope when configured."
       }
     },
     "schemas": {
@@ -49,7 +49,23 @@
           "data": {
             "type": "object",
             "description": "Custom contact data fields",
+            "nullable": true,
             "additionalProperties": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PENDING"
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "projectId": {
+            "type": "string"
           },
           "createdAt": {
             "type": "string",
@@ -70,11 +86,32 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
           "subject": {
             "type": "string"
           },
           "body": {
             "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "nullable": true
+          },
+          "from": {
+            "type": "string",
+            "format": "email"
+          },
+          "fromName": {
+            "type": "string",
+            "nullable": true
+          },
+          "replyTo": {
+            "type": "string",
+            "format": "email",
+            "nullable": true
           },
           "type": {
             "type": "string",
@@ -83,7 +120,14 @@
               "MARKETING"
             ]
           },
+          "projectId": {
+            "type": "string"
+          },
           "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
             "type": "string",
             "format": "date-time"
           }
@@ -200,8 +244,20 @@
             "type": "string",
             "nullable": true
           },
+          "type": {
+            "type": "string",
+            "enum": [
+              "DYNAMIC",
+              "STATIC"
+            ]
+          },
           "condition": {
-            "$ref": "#/components/schemas/FilterCondition"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FilterCondition"
+              }
+            ],
+            "nullable": true
           },
           "trackMembership": {
             "type": "boolean"
@@ -615,6 +671,7 @@
                       },
                       {
                         "type": "array",
+                        "maxItems": 50,
                         "items": {
                           "oneOf": [
                             {
@@ -640,10 +697,10 @@
                             }
                           ]
                         },
-                        "description": "Array of recipients (strings or objects)"
+                        "description": "Array of recipients (strings or objects), maximum 50 recipients"
                       }
                     ],
-                    "description": "Recipient email(s). Can be a string, an object with {name, email}, or an array of either."
+                    "description": "Recipient email(s). Can be a string, an object with {name, email}, or an array of either. Maximum 50 recipients per request."
                   },
                   "subject": {
                     "type": "string",
@@ -1465,7 +1522,7 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "contacts": {
+                    "data": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/Contact"
@@ -1850,7 +1907,7 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "templates": {
+                    "data": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/Template"
@@ -2261,7 +2318,25 @@
         },
         "responses": {
           "200": {
-            "description": "Campaign scheduled/sending"
+            "description": "Campaign scheduled/sending",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Campaign"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

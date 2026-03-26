@@ -16,7 +16,7 @@ func TestNew_InitializesServices(t *testing.T) {
 	if client == nil {
 		t.Fatal("expected client")
 	}
-	if client.Emails == nil || client.Events == nil || client.Contacts == nil || client.Campaigns == nil || client.Segments == nil {
+	if client.Emails == nil || client.Events == nil || client.Contacts == nil || client.Templates == nil || client.Campaigns == nil || client.Segments == nil {
 		t.Fatal("expected all services to be initialized")
 	}
 	if client.config.BaseURL != defaultBaseURL {

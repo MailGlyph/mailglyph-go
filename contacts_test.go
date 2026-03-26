@@ -10,7 +10,7 @@ import (
 func TestContactsList_PaginatedCursor(t *testing.T) {
 	client, server, captured := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"contacts":[{"id":"c_1","email":"a@example.com","subscribed":true,"data":{},"createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-01-01T00:00:00Z"}],"cursor":"next_1","hasMore":true,"total":12}`))
+		_, _ = w.Write([]byte(`{"data":[{"id":"c_1","email":"a@example.com","subscribed":true,"data":{},"status":"ACTIVE","expiresAt":null,"projectId":"proj_1","createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-01-01T00:00:00Z"}],"cursor":"next_1","hasMore":true,"total":12}`))
 	}, "sk_test")
 	defer server.Close()
 
@@ -20,8 +20,11 @@ func TestContactsList_PaginatedCursor(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list failed: %v", err)
 	}
-	if len(resp.Contacts) != 1 || resp.Cursor == nil || *resp.Cursor != "next_1" || !resp.HasMore {
+	if len(resp.Data) != 1 || resp.Cursor == nil || *resp.Cursor != "next_1" || !resp.HasMore {
 		t.Fatalf("unexpected response: %+v", resp)
+	}
+	if resp.Data[0].Status != "ACTIVE" || resp.Data[0].ProjectID != "proj_1" {
+		t.Fatalf("unexpected contact fields: %+v", resp.Data[0])
 	}
 	if !strings.Contains(captured.Query, "limit=10") || !strings.Contains(captured.Query, "cursor=cur_1") {
 		t.Fatalf("unexpected query: %s", captured.Query)
@@ -31,7 +34,7 @@ func TestContactsList_PaginatedCursor(t *testing.T) {
 func TestContactsList_WithFilters(t *testing.T) {
 	client, server, captured := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"contacts":[],"hasMore":false}`))
+		_, _ = w.Write([]byte(`{"data":[],"hasMore":false}`))
 	}, "sk_test")
 	defer server.Close()
 
@@ -85,7 +88,7 @@ func TestContactsCreate_New(t *testing.T) {
 	client, server, _ := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(`{"id":"c_1","email":"new@example.com","subscribed":true,"data":{},"createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-01-01T00:00:00Z","_meta":{"isNew":true,"isUpdate":false}}`))
+		_, _ = w.Write([]byte(`{"id":"c_1","email":"new@example.com","subscribed":true,"data":{},"status":"ACTIVE","expiresAt":null,"projectId":"proj_1","createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-01-01T00:00:00Z","_meta":{"isNew":true,"isUpdate":false}}`))
 	}, "sk_test")
 	defer server.Close()
 
@@ -101,7 +104,7 @@ func TestContactsCreate_New(t *testing.T) {
 func TestContactsCreate_Upsert(t *testing.T) {
 	client, server, _ := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"c_1","email":"existing@example.com","subscribed":true,"data":{},"createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-01-01T00:00:00Z","_meta":{"isNew":false,"isUpdate":true}}`))
+		_, _ = w.Write([]byte(`{"id":"c_1","email":"existing@example.com","subscribed":true,"data":{},"status":"ACTIVE","expiresAt":null,"projectId":"proj_1","createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-01-01T00:00:00Z","_meta":{"isNew":false,"isUpdate":true}}`))
 	}, "sk_test")
 	defer server.Close()
 
@@ -185,7 +188,7 @@ func TestContactsDelete_NotFound(t *testing.T) {
 func TestContactsCount_UsesTotal(t *testing.T) {
 	client, server, _ := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"contacts":[],"hasMore":true,"total":42}`))
+		_, _ = w.Write([]byte(`{"data":[],"hasMore":true,"total":42}`))
 	}, "sk_test")
 	defer server.Close()
 

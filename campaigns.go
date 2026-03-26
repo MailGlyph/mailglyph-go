@@ -92,9 +92,9 @@ func (s *CampaignsService) Update(ctx context.Context, id string, params *Update
 }
 
 // Send sends or schedules a campaign.
-func (s *CampaignsService) Send(ctx context.Context, id string, params *SendCampaignParams) error {
+func (s *CampaignsService) Send(ctx context.Context, id string, params *SendCampaignParams) (*SendCampaignResponse, error) {
 	if id == "" {
-		return newValidationError("id is required")
+		return nil, newValidationError("id is required")
 	}
 
 	path := "/campaigns/" + url.PathEscape(id) + "/send"
@@ -102,7 +102,11 @@ func (s *CampaignsService) Send(ctx context.Context, id string, params *SendCamp
 	if params != nil {
 		payload = params
 	}
-	return s.client.http.do(ctx, "POST", path, nil, payload, nil)
+	response := &SendCampaignResponse{}
+	if err := s.client.http.do(ctx, "POST", path, nil, payload, response); err != nil {
+		return nil, err
+	}
+	return response, nil
 }
 
 // Cancel cancels a scheduled campaign.

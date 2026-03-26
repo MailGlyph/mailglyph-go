@@ -151,6 +151,7 @@ func main() {
     if err != nil {
         panic(err)
     }
+    _ = contacts.Data
     _ = contacts
 
     contact, err := client.Contacts.Create(ctx, &mailglyph.CreateContactParams{
@@ -224,9 +225,11 @@ func main() {
     }
 
     scheduledFor := "2026-03-01T10:00:00Z"
-    if err := client.Campaigns.Send(ctx, campaign.ID, &mailglyph.SendCampaignParams{ScheduledFor: &scheduledFor}); err != nil {
+    sendResp, err := client.Campaigns.Send(ctx, campaign.ID, &mailglyph.SendCampaignParams{ScheduledFor: &scheduledFor})
+    if err != nil {
         panic(err)
     }
+    _ = sendResp.Message
 
     _, err = client.Campaigns.Test(ctx, campaign.ID, "preview@myapp.com")
     if err != nil {

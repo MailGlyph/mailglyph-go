@@ -135,7 +135,7 @@ func TestIntegrationLocalAPI(t *testing.T) {
 
 	contactsList, err := secretClient.Contacts.List(ctx, &ListContactsParams{Limit: intPtr(20)})
 	requireNoStepError(t, "5. Contacts — List", err)
-	listTotal := len(contactsList.Contacts)
+	listTotal := len(contactsList.Data)
 	if contactsList.Total != nil {
 		listTotal = *contactsList.Total
 	}

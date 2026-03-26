@@ -27,6 +27,7 @@ type Client struct {
 	Emails    *EmailsService
 	Events    *EventsService
 	Contacts  *ContactsService
+	Templates *TemplatesService
 	Campaigns *CampaignsService
 	Segments  *SegmentsService
 }
@@ -57,6 +58,7 @@ func New(apiKey string, opts ...Option) *Client {
 	client.Emails = &EmailsService{client: client}
 	client.Events = &EventsService{client: client}
 	client.Contacts = &ContactsService{client: client}
+	client.Templates = &TemplatesService{client: client}
 	client.Campaigns = &CampaignsService{client: client}
 	client.Segments = &SegmentsService{client: client}
 

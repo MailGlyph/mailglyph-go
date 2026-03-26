@@ -127,6 +127,9 @@ type Contact struct {
 	Email      string                 `json:"email"`
 	Subscribed bool                   `json:"subscribed"`
 	Data       map[string]interface{} `json:"data"`
+	Status     string                 `json:"status"`
+	ExpiresAt  *string                `json:"expiresAt"`
+	ProjectID  string                 `json:"projectId"`
 	CreatedAt  string                 `json:"createdAt"`
 	UpdatedAt  string                 `json:"updatedAt"`
 }
@@ -153,10 +156,44 @@ type ListContactsParams struct {
 
 // ListContactsResponse contains cursor-paginated contacts.
 type ListContactsResponse struct {
-	Contacts []Contact `json:"contacts"`
-	Cursor   *string   `json:"cursor"`
-	HasMore  bool      `json:"hasMore"`
-	Total    *int      `json:"total,omitempty"`
+	Data    []Contact `json:"data"`
+	Cursor  *string   `json:"cursor"`
+	HasMore bool      `json:"hasMore"`
+	Total   *int      `json:"total,omitempty"`
+}
+
+// Template contains a template record.
+type Template struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
+	Subject     string  `json:"subject"`
+	Body        string  `json:"body"`
+	Text        *string `json:"text"`
+	From        string  `json:"from"`
+	FromName    *string `json:"fromName"`
+	ReplyTo     *string `json:"replyTo"`
+	Type        string  `json:"type"`
+	ProjectID   string  `json:"projectId"`
+	CreatedAt   string  `json:"createdAt"`
+	UpdatedAt   string  `json:"updatedAt"`
+}
+
+// ListTemplatesParams controls template list filtering and pagination.
+type ListTemplatesParams struct {
+	Limit  *int    `json:"-"`
+	Cursor *string `json:"-"`
+	Type   *string `json:"-"`
+	Search *string `json:"-"`
+}
+
+// ListTemplatesResponse contains paginated templates.
+type ListTemplatesResponse struct {
+	Data       []Template `json:"data"`
+	Total      int        `json:"total"`
+	Page       int        `json:"page"`
+	PageSize   int        `json:"pageSize"`
+	TotalPages int        `json:"totalPages"`
 }
 
 // CreateContactParams contains fields for creating a contact.
@@ -248,6 +285,13 @@ type SendCampaignParams struct {
 	ScheduledFor *string `json:"scheduledFor,omitempty"`
 }
 
+// SendCampaignResponse wraps campaign send/schedule responses.
+type SendCampaignResponse struct {
+	Success bool     `json:"success"`
+	Data    Campaign `json:"data"`
+	Message string   `json:"message"`
+}
+
 // CampaignEnvelope wraps common campaign responses.
 type CampaignEnvelope struct {
 	Success bool     `json:"success"`
@@ -278,9 +322,13 @@ type Segment struct {
 	ID              string           `json:"id"`
 	Name            string           `json:"name"`
 	Description     *string          `json:"description,omitempty"`
+	Type            string           `json:"type"`
 	Condition       *FilterCondition `json:"condition,omitempty"`
 	TrackMembership bool             `json:"trackMembership"`
 	MemberCount     int              `json:"memberCount"`
+	ProjectID       string           `json:"projectId"`
+	CreatedAt       string           `json:"createdAt"`
+	UpdatedAt       string           `json:"updatedAt"`
 }
 
 // CreateSegmentParams contains segment creation fields.

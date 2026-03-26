@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### ⚠ BREAKING CHANGES
+
+* align schema-backed response/types with current OpenAPI:
+  * `ListContactsResponse` now uses `data` (was `contacts`)
+  * `Campaigns.Send` now returns `(*SendCampaignResponse, error)` instead of `error`
+
+### Bug Fixes
+
+* parse `GET /contacts` using `{ data, cursor, hasMore, total }`
+* add `TemplatesService.List` with `GET /templates` pagination shape `{ data, total, page, pageSize, totalPages }`
+* parse `POST /campaigns/{id}/send` as `{ success, data, message }`
+* update schema models: `Contact` (`status`, `expiresAt`, `projectId`, nullable `data`), `Template` (expanded fields), `Segment` (`type`, nullable `condition`, `projectId`, timestamps)
+
 ## [1.1.0](https://github.com/MailGlyph/mailglyph-go/compare/v1.0.0...v1.1.0) (2026-03-10)
 
 
