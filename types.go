@@ -1,6 +1,9 @@
 package mailglyph
 
-import "time"
+import (
+	"io"
+	"time"
+)
 
 // Version is the SDK version used in the User-Agent header.
 const Version = "0.2.0"
@@ -50,19 +53,25 @@ type VerifyEmailParams struct {
 
 // VerifyEmailResult contains email verification analysis.
 type VerifyEmailResult struct {
-	Email           string   `json:"email"`
-	Valid           bool     `json:"valid"`
-	IsDisposable    bool     `json:"isDisposable"`
-	IsAlias         bool     `json:"isAlias"`
-	IsTypo          bool     `json:"isTypo"`
-	IsPlusAddressed bool     `json:"isPlusAddressed"`
-	IsRandomInput   bool     `json:"isRandomInput"`
-	IsPersonalEmail bool     `json:"isPersonalEmail"`
-	DomainExists    bool     `json:"domainExists"`
-	HasWebsite      bool     `json:"hasWebsite"`
-	HasMxRecords    bool     `json:"hasMxRecords"`
-	SuggestedEmail  *string  `json:"suggestedEmail,omitempty"`
-	Reasons         []string `json:"reasons"`
+	Email            string   `json:"email"`
+	Valid            bool     `json:"valid"`
+	ValidationMethod string   `json:"validationMethod"`
+	SMTPStatus       *string  `json:"smtpStatus,omitempty"`
+	SMTPDiagnosis    *string  `json:"smtpDiagnosis,omitempty"`
+	IsDisposable     bool     `json:"isDisposable"`
+	IsAlias          bool     `json:"isAlias"`
+	IsTypo           bool     `json:"isTypo"`
+	IsPlusAddressed  bool     `json:"isPlusAddressed"`
+	IsRandomInput    bool     `json:"isRandomInput"`
+	IsPersonalEmail  bool     `json:"isPersonalEmail"`
+	IsCatchAll       bool     `json:"isCatchAll"`
+	IsGreylisted     bool     `json:"isGreylisted"`
+	DomainExists     bool     `json:"domainExists"`
+	HasWebsite       bool     `json:"hasWebsite"`
+	HasMxRecords     bool     `json:"hasMxRecords"`
+	SuggestedEmail   *string  `json:"suggestedEmail,omitempty"`
+	Reasons          []string `json:"reasons"`
+	CreditsConsumed  int      `json:"creditsConsumed"`
 }
 
 // SentEmailContact contains a contact reference for queued emails.
@@ -93,6 +102,130 @@ type SendEmailResponse struct {
 type VerifyEmailResponse struct {
 	Success bool              `json:"success"`
 	Data    VerifyEmailResult `json:"data"`
+}
+
+// BulkEmailValidationJob contains the status and aggregate counts for a bulk validation job.
+type BulkEmailValidationJob struct {
+	ID                   string  `json:"id"`
+	Status               string  `json:"status"`
+	OriginalFilename     string  `json:"originalFilename"`
+	FileSizeBytes        int64   `json:"fileSizeBytes"`
+	LocalEmailCount      int     `json:"localEmailCount"`
+	ReservedCredits      int     `json:"reservedCredits"`
+	ConfirmedEmailCount  *int    `json:"confirmedEmailCount"`
+	CreditUsed           *int    `json:"creditUsed"`
+	Valid                int     `json:"valid"`
+	Invalid              int     `json:"invalid"`
+	Unknown              int     `json:"unknown"`
+	Catchall             int     `json:"catchall"`
+	Duplicates           int     `json:"duplicates"`
+	SpamTrap             int     `json:"spamTrap"`
+	ToxicDomains         int     `json:"toxicDomains"`
+	ReadyForDownload     bool    `json:"readyForDownload"`
+	ErrorCode            *string `json:"errorCode"`
+	ErrorMessage         *string `json:"errorMessage"`
+	LastValidationStatus *string `json:"lastValidationStatus"`
+	CreatedAt            string  `json:"createdAt"`
+	UpdatedAt            string  `json:"updatedAt"`
+	CompletedAt          *string `json:"completedAt"`
+}
+
+// CreateBulkEmailValidationParams contains a file upload for bulk email validation.
+type CreateBulkEmailValidationParams struct {
+	Filename string
+	Content  io.Reader
+}
+
+// ListBulkEmailValidationsParams controls bulk validation job filtering and pagination.
+type ListBulkEmailValidationsParams struct {
+	Limit  *int    `json:"-"`
+	Cursor *string `json:"-"`
+	Search *string `json:"-"`
+	Status *string `json:"-"`
+}
+
+// BulkEmailValidationJobList contains cursor-paginated bulk validation jobs.
+type BulkEmailValidationJobList struct {
+	Items      []BulkEmailValidationJob `json:"items"`
+	NextCursor *string                  `json:"nextCursor"`
+}
+
+// BulkEmailValidationJobResponse wraps a single bulk validation job.
+type BulkEmailValidationJobResponse struct {
+	Success bool                   `json:"success"`
+	Data    BulkEmailValidationJob `json:"data"`
+}
+
+// ListBulkEmailValidationsResponse wraps a bulk validation job page.
+type ListBulkEmailValidationsResponse struct {
+	Success bool                       `json:"success"`
+	Data    BulkEmailValidationJobList `json:"data"`
+}
+
+// DeleteBulkEmailValidationResult contains credits refunded after deletion.
+type DeleteBulkEmailValidationResult struct {
+	RefundedCredits int `json:"refundedCredits"`
+}
+
+// DeleteBulkEmailValidationResponse wraps bulk validation deletion results.
+type DeleteBulkEmailValidationResponse struct {
+	Success bool                            `json:"success"`
+	Data    DeleteBulkEmailValidationResult `json:"data"`
+}
+
+// DownloadBulkEmailValidationParams controls result file downloads.
+type DownloadBulkEmailValidationParams struct {
+	Filter *string `json:"-"`
+	Format *string `json:"-"`
+}
+
+// BulkEmailValidationDownload contains a downloaded result file.
+type BulkEmailValidationDownload struct {
+	Content     []byte
+	ContentType string
+	Filename    string
+}
+
+// VerificationCreditSummary contains the current validation credit balance.
+type VerificationCreditSummary struct {
+	Balance    int  `json:"balance"`
+	LowCredits bool `json:"lowCredits"`
+}
+
+// VerificationCreditsResponse wraps the validation credit summary.
+type VerificationCreditsResponse struct {
+	Success bool                      `json:"success"`
+	Data    VerificationCreditSummary `json:"data"`
+}
+
+// VerificationCreditLedgerEntry contains a credit ledger entry without raw email addresses.
+type VerificationCreditLedgerEntry struct {
+	ID           string  `json:"id"`
+	Seq          int     `json:"seq"`
+	Type         string  `json:"type"`
+	CreditsDelta int     `json:"creditsDelta"`
+	BalanceAfter int     `json:"balanceAfter"`
+	Source       *string `json:"source"`
+	Status       *string `json:"status"`
+	CreatedAt    string  `json:"createdAt"`
+}
+
+// ListVerificationCreditLedgerParams controls ledger pagination.
+type ListVerificationCreditLedgerParams struct {
+	Limit  *int    `json:"-"`
+	Cursor *string `json:"-"`
+}
+
+// VerificationCreditLedger contains a cursor-paginated ledger page.
+type VerificationCreditLedger struct {
+	Items      []VerificationCreditLedgerEntry `json:"items"`
+	NextCursor *string                         `json:"nextCursor"`
+}
+
+// VerificationCreditLedgerResponse wraps a validation credit ledger page.
+type VerificationCreditLedgerResponse struct {
+	Success bool                     `json:"success"`
+	Data    VerificationCreditLedger `json:"data"`
 }
 
 // TrackEventParams contains fields for tracking an event.

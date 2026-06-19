@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -137,6 +138,147 @@ func (h *httpClient) do(ctx context.Context, method, path string, query url.Valu
 			continue
 		}
 		return mappedErr
+	}
+}
+
+func (h *httpClient) doMultipart(ctx context.Context, method, path string, query url.Values, fieldName, filename string, content io.Reader, out interface{}) error {
+	if err := h.validateAPIKey(path); err != nil {
+		return err
+	}
+
+	requestURL, err := h.buildURL(path, query)
+	if err != nil {
+		return err
+	}
+
+	var payload bytes.Buffer
+	writer := multipart.NewWriter(&payload)
+	part, err := writer.CreateFormFile(fieldName, filename)
+	if err != nil {
+		return fmt.Errorf("mailglyph: create multipart file field: %w", err)
+	}
+	if _, err := io.Copy(part, content); err != nil {
+		return fmt.Errorf("mailglyph: read multipart file content: %w", err)
+	}
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("mailglyph: close multipart writer: %w", err)
+	}
+
+	for attempt := 0; ; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, method, requestURL, bytes.NewReader(payload.Bytes()))
+		if err != nil {
+			return fmt.Errorf("mailglyph: create request: %w", err)
+		}
+
+		req.Header.Set("Authorization", "Bearer "+h.apiKey)
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("User-Agent", h.userAgent)
+
+		resp, err := h.client.Do(req)
+		if err != nil {
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return err
+			}
+			return fmt.Errorf("mailglyph: request failed: %w", err)
+		}
+
+		responseBody, readErr := io.ReadAll(resp.Body)
+		closeErr := resp.Body.Close()
+		if readErr != nil {
+			return fmt.Errorf("mailglyph: read response body: %w", readErr)
+		}
+		if closeErr != nil {
+			return fmt.Errorf("mailglyph: close response body: %w", closeErr)
+		}
+
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			if out != nil && resp.StatusCode != http.StatusNoContent && len(responseBody) > 0 {
+				if err := json.Unmarshal(responseBody, out); err != nil {
+					return fmt.Errorf("mailglyph: decode response body: %w", err)
+				}
+			}
+			return nil
+		}
+
+		mappedErr := mapHTTPError(resp.StatusCode, responseBody, resp.Header)
+		if shouldRetry(resp.StatusCode) && attempt < h.maxRetries {
+			delay := retryDelay(attempt, resp.Header.Get("Retry-After"))
+			if err := sleepWithContext(ctx, delay); err != nil {
+				return err
+			}
+			continue
+		}
+		return mappedErr
+	}
+}
+
+func (h *httpClient) doRaw(ctx context.Context, method, path string, query url.Values, body interface{}) ([]byte, http.Header, error) {
+	if err := h.validateAPIKey(path); err != nil {
+		return nil, nil, err
+	}
+
+	requestURL, err := h.buildURL(path, query)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var payload []byte
+	if body != nil {
+		payload, err = json.Marshal(body)
+		if err != nil {
+			return nil, nil, fmt.Errorf("mailglyph: encode request body: %w", err)
+		}
+	}
+
+	for attempt := 0; ; attempt++ {
+		var bodyReader io.Reader
+		if len(payload) > 0 {
+			bodyReader = bytes.NewReader(payload)
+		}
+
+		req, err := http.NewRequestWithContext(ctx, method, requestURL, bodyReader)
+		if err != nil {
+			return nil, nil, fmt.Errorf("mailglyph: create request: %w", err)
+		}
+
+		req.Header.Set("Authorization", "Bearer "+h.apiKey)
+		req.Header.Set("Accept", "text/csv, application/vnd.ms-excel, application/json")
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		req.Header.Set("User-Agent", h.userAgent)
+
+		resp, err := h.client.Do(req)
+		if err != nil {
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return nil, nil, err
+			}
+			return nil, nil, fmt.Errorf("mailglyph: request failed: %w", err)
+		}
+
+		responseBody, readErr := io.ReadAll(resp.Body)
+		closeErr := resp.Body.Close()
+		if readErr != nil {
+			return nil, nil, fmt.Errorf("mailglyph: read response body: %w", readErr)
+		}
+		if closeErr != nil {
+			return nil, nil, fmt.Errorf("mailglyph: close response body: %w", closeErr)
+		}
+
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			return responseBody, resp.Header.Clone(), nil
+		}
+
+		mappedErr := mapHTTPError(resp.StatusCode, responseBody, resp.Header)
+		if shouldRetry(resp.StatusCode) && attempt < h.maxRetries {
+			delay := retryDelay(attempt, resp.Header.Get("Retry-After"))
+			if err := sleepWithContext(ctx, delay); err != nil {
+				return nil, nil, err
+			}
+			continue
+		}
+		return nil, nil, mappedErr
 	}
 }
 

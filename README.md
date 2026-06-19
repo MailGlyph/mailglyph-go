@@ -97,6 +97,81 @@ func main() {
 }
 ```
 
+### Email Verification
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "strings"
+
+    mailglyph "github.com/MailGlyph/mailglyph-go"
+)
+
+func main() {
+    client := mailglyph.New("sk_your_api_key")
+    ctx := context.Background()
+
+    result, err := client.Verification.Validate(ctx, "user@example.com")
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(result.Data.Valid, result.Data.ValidationMethod, result.Data.CreditsConsumed)
+
+    job, err := client.Verification.CreateBulk(ctx, &mailglyph.CreateBulkEmailValidationParams{
+        Filename: "emails.csv",
+        Content:  strings.NewReader("email\none@example.com\ntwo@example.com\n"),
+    })
+    if err != nil {
+        panic(err)
+    }
+
+    jobs, err := client.Verification.ListBulk(ctx, &mailglyph.ListBulkEmailValidationsParams{Limit: intPtr(20)})
+    if err != nil {
+        panic(err)
+    }
+    _ = jobs
+
+    currentJob, err := client.Verification.GetBulk(ctx, job.Data.ID)
+    if err != nil {
+        panic(err)
+    }
+    if currentJob.Data.Status == "ACTION_REQUIRED" {
+        _, err = client.Verification.ContinueBulk(ctx, job.Data.ID)
+        if err != nil {
+            panic(err)
+        }
+    }
+    if currentJob.Data.ReadyForDownload {
+        download, err := client.Verification.DownloadBulk(ctx, job.Data.ID, &mailglyph.DownloadBulkEmailValidationParams{
+            Filter: strPtr("all"),
+            Format: strPtr("csv"),
+        })
+        if err != nil {
+            panic(err)
+        }
+        fmt.Println(download.ContentType, len(download.Content))
+    }
+
+    credits, err := client.Verification.GetCredits(ctx)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(credits.Data.Balance)
+
+    ledger, err := client.Verification.ListCreditLedger(ctx, &mailglyph.ListVerificationCreditLedgerParams{Limit: intPtr(25)})
+    if err != nil {
+        panic(err)
+    }
+    _ = ledger
+}
+
+func intPtr(v int) *int       { return &v }
+func strPtr(v string) *string { return &v }
+```
+
 ### Events
 
 ```go

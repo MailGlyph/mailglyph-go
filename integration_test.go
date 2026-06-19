@@ -37,8 +37,15 @@ func TestIntegrationLocalAPI(t *testing.T) {
 	createdContactID := ""
 	createdSegmentID := ""
 	createdCampaignID := ""
+	createdBulkValidationJobID := ""
 
 	defer func() {
+		if createdBulkValidationJobID != "" {
+			t.Logf("cleanup: deleting bulk validation job %s", createdBulkValidationJobID)
+			if _, err := secretClient.Verification.DeleteBulk(ctx, createdBulkValidationJobID); err != nil {
+				t.Logf("cleanup warning (bulk validation job): %s", formatIntegrationErr(err))
+			}
+		}
 		if createdContactID != "" {
 			t.Logf("cleanup: deleting contact %s", createdContactID)
 			if err := secretClient.Contacts.Delete(ctx, createdContactID); err != nil {
@@ -84,30 +91,95 @@ func TestIntegrationLocalAPI(t *testing.T) {
 	}
 	t.Logf("step 2 ok: valid=%v reasons=%v", verifyResp.Data.Valid, verifyResp.Data.Reasons)
 
-	t.Log("step 3: Events — Track (pk_* key)")
+	t.Log("step 3: Verification — Credits, Ledger, and Bulk Validation")
+	creditsResp, err := secretClient.Verification.GetCredits(ctx)
+	requireNoStepError(t, "3. Verification — Get Credits", err)
+	if creditsResp.Data.Balance < 3 {
+		t.Fatalf("step 3. Verification — Get Credits failed: expected at least 3 credits for integration test, got %d", creditsResp.Data.Balance)
+	}
+	t.Logf("step 3 credits ok: balance=%d lowCredits=%v", creditsResp.Data.Balance, creditsResp.Data.LowCredits)
+
+	ledgerResp, err := secretClient.Verification.ListCreditLedger(ctx, &ListVerificationCreditLedgerParams{Limit: intPtr(5)})
+	requireNoStepError(t, "3. Verification — List Credit Ledger", err)
+	if ledgerResp.Data.Items == nil {
+		t.Fatalf("step 3. Verification — List Credit Ledger failed: expected items array, got %+v", ledgerResp.Data)
+	}
+
+	bulkFilePath := filepath.Join(t.TempDir(), "mailglyph-sdk-validation.csv")
+	bulkFileBody := strings.Join([]string{
+		"email",
+		fmt.Sprintf("bulk-sdk-%s-1@%s", unique, cfg.TestDomain),
+		fmt.Sprintf("bulk-sdk-%s-2@%s", unique, cfg.TestDomain),
+	}, "\n") + "\n"
+	if err := os.WriteFile(bulkFilePath, []byte(bulkFileBody), 0o600); err != nil {
+		t.Fatalf("step 3. Verification — write bulk test file: %v", err)
+	}
+
+	bulkResp, err := secretClient.Verification.CreateBulkFromFile(ctx, bulkFilePath)
+	requireNoStepError(t, "3. Verification — Create Bulk", err)
+	createdBulkValidationJobID = bulkResp.Data.ID
+	if createdBulkValidationJobID == "" || bulkResp.Data.LocalEmailCount < 2 {
+		t.Fatalf("step 3. Verification — Create Bulk failed: unexpected job %+v", bulkResp.Data)
+	}
+
+	bulkListResp, err := secretClient.Verification.ListBulk(ctx, &ListBulkEmailValidationsParams{Limit: intPtr(10), Search: strPtr("mailglyph-sdk-validation")})
+	requireNoStepError(t, "3. Verification — List Bulk", err)
+	if len(bulkListResp.Data.Items) == 0 {
+		t.Fatalf("step 3. Verification — List Bulk failed: expected at least one job")
+	}
+
+	bulkJob, err := waitForBulkValidationJob(ctx, t, secretClient, createdBulkValidationJobID, 5*time.Minute)
+	requireNoStepError(t, "3. Verification — Poll Bulk", err)
+	if bulkJob.Status == "FAILED" {
+		t.Fatalf("step 3. Verification — Poll Bulk failed: job failed with code=%v message=%v", bulkJob.ErrorCode, bulkJob.ErrorMessage)
+	}
+	if bulkJob.Status == "ACTION_REQUIRED" {
+		continued, err := secretClient.Verification.ContinueBulk(ctx, createdBulkValidationJobID)
+		requireNoStepError(t, "3. Verification — Continue Bulk", err)
+		t.Logf("step 3 continue ok: status=%s", continued.Data.Status)
+		bulkJob, err = waitForBulkValidationJob(ctx, t, secretClient, createdBulkValidationJobID, 5*time.Minute)
+		requireNoStepError(t, "3. Verification — Poll Continued Bulk", err)
+	}
+	if !bulkJob.ReadyForDownload {
+		t.Fatalf("step 3. Verification — Poll Bulk failed: expected readyForDownload, got %+v", bulkJob)
+	}
+
+	downloadResp, err := secretClient.Verification.DownloadBulk(ctx, createdBulkValidationJobID, &DownloadBulkEmailValidationParams{Filter: strPtr("all"), Format: strPtr("csv")})
+	requireNoStepError(t, "3. Verification — Download Bulk", err)
+	if len(downloadResp.Content) == 0 {
+		t.Fatalf("step 3. Verification — Download Bulk failed: expected non-empty file")
+	}
+
+	deleteResp, err := secretClient.Verification.DeleteBulk(ctx, createdBulkValidationJobID)
+	requireNoStepError(t, "3. Verification — Delete Bulk", err)
+	t.Logf("step 3 delete ok: refundedCredits=%d", deleteResp.Data.RefundedCredits)
+	createdBulkValidationJobID = ""
+	t.Log("step 3 ok")
+
+	t.Log("step 4: Events — Track (pk_* key)")
 	eventName := "sdk_test_event"
 	trackResp, err := publicClient.Events.Track(ctx, &TrackEventParams{
 		Email: verifyInput,
 		Event: eventName,
 	})
-	requireNoStepError(t, "3. Events — Track", err)
+	requireNoStepError(t, "4. Events — Track", err)
 	if !trackResp.Success {
-		t.Fatalf("step 3. Events — Track failed: expected success response, got %+v", trackResp)
+		t.Fatalf("step 4. Events — Track failed: expected success response, got %+v", trackResp)
 	}
-	t.Logf("step 3 ok: event ID=%s", trackResp.Data.Event)
+	t.Logf("step 4 ok: event ID=%s", trackResp.Data.Event)
 
-	t.Log("step 4: Events — Get Names (sk_* key)")
+	t.Log("step 5: Events — Get Names (sk_* key)")
 	namesResp, err := secretClient.Events.GetNames(ctx)
-	requireNoStepError(t, "4. Events — Get Names", err)
+	requireNoStepError(t, "5. Events — Get Names", err)
 	if len(namesResp.EventNames) == 0 {
-		t.Fatalf("step 4. Events — Get Names failed: expected non-empty array")
+		t.Fatalf("step 5. Events — Get Names failed: expected non-empty array")
 	}
 	if !containsString(namesResp.EventNames, eventName) {
-		t.Fatalf("step 4. Events — Get Names failed: expected %q in %v", eventName, namesResp.EventNames)
+		t.Fatalf("step 5. Events — Get Names failed: expected %q in %v", eventName, namesResp.EventNames)
 	}
-	t.Logf("step 4 ok: names=%v", namesResp.EventNames)
+	t.Logf("step 5 ok: names=%v", namesResp.EventNames)
 
-	t.Log("step 5: Contacts — Full CRUD lifecycle")
+	t.Log("step 6: Contacts — Full CRUD lifecycle")
 	contactEmail := fmt.Sprintf("sdk-integration-%s@%s", unique, cfg.TestDomain)
 	createdContact, err := secretClient.Contacts.Create(ctx, &CreateContactParams{
 		Email: contactEmail,
@@ -324,6 +396,36 @@ func containsString(values []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func waitForBulkValidationJob(ctx context.Context, t *testing.T, client *Client, jobID string, timeout time.Duration) (BulkEmailValidationJob, error) {
+	t.Helper()
+
+	deadline := time.NewTimer(timeout)
+	defer deadline.Stop()
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		resp, err := client.Verification.GetBulk(ctx, jobID)
+		if err != nil {
+			return BulkEmailValidationJob{}, err
+		}
+		job := resp.Data
+		t.Logf("bulk validation job %s status=%s ready=%v valid=%d invalid=%d unknown=%d catchall=%d", job.ID, job.Status, job.ReadyForDownload, job.Valid, job.Invalid, job.Unknown, job.Catchall)
+		switch job.Status {
+		case "COMPLETED", "FAILED", "ACTION_REQUIRED":
+			return job, nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return BulkEmailValidationJob{}, ctx.Err()
+		case <-deadline.C:
+			return job, fmt.Errorf("bulk validation job %s did not finish within %s; last status=%s", jobID, timeout, job.Status)
+		case <-ticker.C:
+		}
+	}
 }
 
 func loadEnvFromFile(t *testing.T, name string) {

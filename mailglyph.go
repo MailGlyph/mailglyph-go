@@ -24,12 +24,13 @@ type Client struct {
 	config ClientConfig
 	http   *httpClient
 
-	Emails    *EmailsService
-	Events    *EventsService
-	Contacts  *ContactsService
-	Templates *TemplatesService
-	Campaigns *CampaignsService
-	Segments  *SegmentsService
+	Emails       *EmailsService
+	Verification *VerificationService
+	Events       *EventsService
+	Contacts     *ContactsService
+	Templates    *TemplatesService
+	Campaigns    *CampaignsService
+	Segments     *SegmentsService
 }
 
 // New creates a new MailGlyph client.
@@ -56,6 +57,7 @@ func New(apiKey string, opts ...Option) *Client {
 		http:   transport,
 	}
 	client.Emails = &EmailsService{client: client}
+	client.Verification = &VerificationService{client: client}
 	client.Events = &EventsService{client: client}
 	client.Contacts = &ContactsService{client: client}
 	client.Templates = &TemplatesService{client: client}

@@ -600,6 +600,243 @@
           "groups"
         ],
         "additionalProperties": false
+      },
+      "VerificationCreditLedgerEntry": {
+        "type": "object",
+        "description": "Append-only credit ledger entry. Email addresses are not returned in ledger responses.",
+        "required": [
+          "id",
+          "seq",
+          "type",
+          "creditsDelta",
+          "balanceAfter",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique ledger entry ID.",
+            "example": "2f4c658f-4b5b-4a19-8d52-36f22d6f4566"
+          },
+          "seq": {
+            "type": "integer",
+            "description": "Monotonic ledger sequence number used for cursor pagination.",
+            "example": 9182
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "PURCHASE",
+              "CONSUME",
+              "REFUND",
+              "ADJUSTMENT"
+            ],
+            "description": "Ledger entry type. PURCHASE adds credits, CONSUME reserves/spends a credit for email validation, REFUND returns a credit for an Unknown result, and ADJUSTMENT is an administrative correction.",
+            "example": "CONSUME"
+          },
+          "creditsDelta": {
+            "type": "integer",
+            "description": "Signed credit change for this entry. Purchases and refunds are positive; email validation consumption is negative.",
+            "example": -1
+          },
+          "balanceAfter": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Project credit balance immediately after this ledger entry was written.",
+            "example": 4820
+          },
+          "source": {
+            "type": "string",
+            "nullable": true,
+            "description": "Origin of the ledger entry, such as single_api, single_tool, bulk, or stripe_checkout.",
+            "example": "single_api"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "Valid",
+              "Invalid",
+              "Unknown",
+              "Catch All",
+              "Grey-listed",
+              null
+            ],
+            "description": "Validation status associated with the entry when available. Purchase entries usually have null status.",
+            "example": "Valid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Time when the ledger entry was created.",
+            "example": "2026-06-17T10:15:30.000Z"
+          }
+        }
+      },
+      "BulkEmailValidationJob": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "originalFilename",
+          "fileSizeBytes",
+          "localEmailCount",
+          "reservedCredits",
+          "valid",
+          "invalid",
+          "unknown",
+          "catchall",
+          "duplicates",
+          "spamTrap",
+          "toxicDomains",
+          "readyForDownload",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "MailGlyph file validation job ID."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "UPLOADING",
+              "PROCESSING",
+              "COMPLETED",
+              "FAILED",
+              "ACTION_REQUIRED"
+            ]
+          },
+          "originalFilename": {
+            "type": "string"
+          },
+          "fileSizeBytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "localEmailCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Email count detected before validation processing."
+          },
+          "reservedCredits": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Credits currently reserved or finally used for this job."
+          },
+          "confirmedEmailCount": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "description": "Confirmed total after processing starts."
+          },
+          "valid": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "invalid": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unknown": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "catchall": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "duplicates": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "spamTrap": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "toxicDomains": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "readyForDownload": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "errorMessage": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "creditUsed": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "description": "Final billable credit count when completed."
+          },
+          "lastValidationStatus": {
+            "type": "string",
+            "nullable": true,
+            "description": "Latest validation processing status when available."
+          }
+        }
+      },
+      "BulkEmailValidationJobList": {
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkEmailValidationJob"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "VerificationCreditPublicSummary": {
+        "type": "object",
+        "required": [
+          "balance",
+          "lowCredits"
+        ],
+        "properties": {
+          "balance": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Current email validation credit balance for this project.",
+            "example": 4820
+          },
+          "lowCredits": {
+            "type": "boolean",
+            "description": "Whether the current balance is low enough to require attention.",
+            "example": false
+          }
+        }
       }
     },
     "parameters": {
@@ -973,7 +1210,7 @@
                               },
                               "email": {
                                 "type": "string",
-                                "description": "Email record ID"
+                                "description": "MailGlyph email record ID. Use this to correlate webhook events (included as 'emailId' in event payload data) with your send requests."
                               }
                             }
                           }
@@ -984,6 +1221,21 @@
                         }
                       }
                     }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "emails": [
+                      {
+                        "contact": {
+                          "id": "cnt_abc123",
+                          "email": "user@example.com"
+                        },
+                        "email": "ac32f08e-c6b9-45d3-9824-a73dff1e3bbf"
+                      }
+                    ],
+                    "timestamp": "2025-01-15T10:30:00.000Z"
                   }
                 }
               }
@@ -1142,8 +1394,8 @@
         "tags": [
           "Public API"
         ],
-        "summary": "Verify email address",
-        "description": "Verify an email address for validity, check if it's from a disposable domain or personal email provider, verify MX records, detect random string patterns, and detect potential typos with suggestions.",
+        "summary": "Validate email address",
+        "description": "Validate an email address, run SMTP deliverability validation when available, check disposable and personal domains, verify MX records, detect random string patterns, and detect potential typos with suggestions.",
         "operationId": "verifyEmail",
         "requestBody": {
           "required": true,
@@ -1158,7 +1410,7 @@
                   "email": {
                     "type": "string",
                     "format": "email",
-                    "description": "Email address to verify"
+                    "description": "Email address to validate"
                   }
                 }
               },
@@ -1187,7 +1439,7 @@
         },
         "responses": {
           "200": {
-            "description": "Email verification completed successfully",
+            "description": "Email validation completed successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -1203,11 +1455,36 @@
                         "email": {
                           "type": "string",
                           "format": "email",
-                          "description": "Email address that was verified"
+                          "description": "Email address that was validated"
                         },
                         "valid": {
                           "type": "boolean",
                           "description": "Whether the email appears to be valid overall"
+                        },
+                        "validationMethod": {
+                          "type": "string",
+                          "enum": [
+                            "local",
+                            "smtp"
+                          ],
+                          "description": "Validation method used for this result. smtp means mailbox-level SMTP validation was attempted."
+                        },
+                        "smtpStatus": {
+                          "type": "string",
+                          "enum": [
+                            "Valid",
+                            "Invalid",
+                            "Unknown",
+                            "Catch All",
+                            "Grey-listed"
+                          ],
+                          "description": "Mailbox-level SMTP validation status when SMTP validation is available.",
+                          "nullable": true
+                        },
+                        "smtpDiagnosis": {
+                          "type": "string",
+                          "description": "Human-readable SMTP validation diagnosis when available.",
+                          "nullable": true
                         },
                         "isDisposable": {
                           "type": "boolean",
@@ -1233,6 +1510,14 @@
                           "type": "boolean",
                           "description": "Whether the email is from a personal/free email provider (Gmail, Hotmail, Yahoo, etc.)"
                         },
+                        "isCatchAll": {
+                          "type": "boolean",
+                          "description": "Whether SMTP validation detected a catch-all domain where the exact mailbox cannot be fully verified"
+                        },
+                        "isGreylisted": {
+                          "type": "boolean",
+                          "description": "Whether SMTP validation was temporarily deferred by greylisting"
+                        },
                         "domainExists": {
                           "type": "boolean",
                           "description": "Whether the domain exists in DNS (has NS records)"
@@ -1256,18 +1541,28 @@
                           "items": {
                             "type": "string"
                           },
-                          "description": "Array of human-readable reasons describing the verification results"
+                          "description": "Array of human-readable reasons describing the validation results"
+                        },
+                        "creditsConsumed": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1,
+                          "description": "Net email validation credits consumed by this request. Valid, Invalid, Catch All, and Grey-listed results consume 1 credit. Unknown results consume 0 credits after automatic refund.",
+                          "example": 1
                         }
                       },
                       "required": [
                         "email",
                         "valid",
+                        "validationMethod",
                         "isDisposable",
                         "isAlias",
                         "isTypo",
                         "isPlusAddressed",
                         "isRandomInput",
                         "isPersonalEmail",
+                        "isCatchAll",
+                        "isGreylisted",
                         "domainExists",
                         "hasWebsite",
                         "hasMxRecords",
@@ -1278,69 +1573,55 @@
                 },
                 "examples": {
                   "validEmail": {
-                    "summary": "Valid email",
+                    "summary": "Valid email result",
                     "value": {
                       "success": true,
                       "data": {
                         "email": "user@gmail.com",
                         "valid": true,
+                        "validationMethod": "smtp",
+                        "smtpStatus": "Valid",
+                        "smtpDiagnosis": "Mailbox exists and can receive mail.",
+                        "creditsConsumed": 1,
                         "isDisposable": false,
                         "isAlias": false,
                         "isTypo": false,
                         "isPlusAddressed": false,
                         "isRandomInput": false,
                         "isPersonalEmail": true,
+                        "isCatchAll": false,
+                        "isGreylisted": false,
                         "domainExists": true,
                         "hasWebsite": true,
                         "hasMxRecords": true,
-                        "reasons": [
-                          "Email appears to be valid"
-                        ]
+                        "reasons": []
                       }
                     }
                   },
-                  "typoDetected": {
-                    "summary": "Email with typo detected",
+                  "unknownEmail": {
+                    "summary": "Unknown result with refunded credit",
                     "value": {
                       "success": true,
                       "data": {
-                        "email": "user@gmial.com",
+                        "email": "user@example.com",
                         "valid": false,
+                        "validationMethod": "smtp",
+                        "smtpStatus": "Unknown",
+                        "smtpDiagnosis": "The mailbox could not be confirmed.",
+                        "creditsConsumed": 0,
                         "isDisposable": false,
-                        "isAlias": false,
-                        "isTypo": true,
-                        "isPlusAddressed": false,
-                        "isRandomInput": false,
-                        "isPersonalEmail": false,
-                        "domainExists": false,
-                        "hasWebsite": false,
-                        "hasMxRecords": false,
-                        "suggestedEmail": "user@gmail.com",
-                        "reasons": [
-                          "Possible typo detected, did you mean gmail.com?",
-                          "Domain does not exist (no nameservers found)"
-                        ]
-                      }
-                    }
-                  },
-                  "disposableEmail": {
-                    "summary": "Disposable email detected",
-                    "value": {
-                      "success": true,
-                      "data": {
-                        "email": "user@tempmail.com",
-                        "valid": true,
-                        "isDisposable": true,
                         "isAlias": false,
                         "isTypo": false,
                         "isPlusAddressed": false,
                         "isRandomInput": false,
                         "isPersonalEmail": false,
+                        "isCatchAll": false,
+                        "isGreylisted": false,
                         "domainExists": true,
                         "hasWebsite": true,
                         "hasMxRecords": true,
                         "reasons": [
-                          "Email appears to be valid"
+                          "Mailbox could not be confirmed"
                         ]
                       }
                     }
@@ -1365,6 +1646,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "The project does not have an available email validation credit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "BILLING_LIMIT_EXCEEDED",
+                    "message": "Email validation credits are required to validate email addresses.",
+                    "details": {
+                      "reason": "insufficient_verification_credits"
+                    }
+                  }
                 }
               }
             }
@@ -3378,6 +3678,901 @@
           },
           "404": {
             "description": "Segment not found"
+          }
+        }
+      }
+    },
+    "/v1/verification-credits": {
+      "get": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "Get email validation credit usage",
+        "description": "Returns the current email validation credit balance for the project attached to the secret API key.",
+        "operationId": "getPublicVerificationCredits",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current project email validation credit balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Always true for successful requests."
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/VerificationCreditPublicSummary",
+                      "description": "Current public credit balance summary for the API key project."
+                    }
+                  }
+                },
+                "examples": {
+                  "usage": {
+                    "summary": "Credit usage summary",
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "balance": 4820,
+                        "lowCredits": false
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing secret API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/verification-credits/ledger": {
+      "get": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "List email validation credit ledger entries",
+        "description": "Returns recent credit ledger entries for the project attached to the secret API key. Raw email addresses are never returned.",
+        "operationId": "listPublicVerificationCreditLedger",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            },
+            "description": "Maximum number of ledger entries to return. Values are clamped between 1 and 100."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cursor returned by the previous page."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated credit ledger entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Always true for successful requests."
+                    },
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "items",
+                        "nextCursor"
+                      ],
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/VerificationCreditLedgerEntry"
+                          },
+                          "description": "Ledger entries ordered from newest to oldest. Entries do not include raw email addresses."
+                        },
+                        "nextCursor": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Cursor for the next page. Omitted or null when there are no more entries."
+                        }
+                      },
+                      "description": "A page of email validation credit ledger entries and the cursor for the next page."
+                    }
+                  }
+                },
+                "examples": {
+                  "ledger": {
+                    "summary": "Recent credit ledger entries",
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "items": [
+                          {
+                            "id": "2f4c658f-4b5b-4a19-8d52-36f22d6f4566",
+                            "seq": 9182,
+                            "type": "CONSUME",
+                            "creditsDelta": -1,
+                            "balanceAfter": 4820,
+                            "source": "single_api",
+                            "status": "Valid",
+                            "createdAt": "2026-06-17T10:15:30.000Z"
+                          },
+                          {
+                            "id": "a1559ed0-3f24-4c8c-9051-50f2b813f0af",
+                            "seq": 9181,
+                            "type": "REFUND",
+                            "creditsDelta": 1,
+                            "balanceAfter": 4821,
+                            "source": "single_api",
+                            "status": "Unknown",
+                            "createdAt": "2026-06-17T10:13:02.000Z"
+                          },
+                          {
+                            "id": "cc2fd351-71a3-4b76-861c-58f1f2d7d4a5",
+                            "seq": 9000,
+                            "type": "PURCHASE",
+                            "creditsDelta": 5000,
+                            "balanceAfter": 5000,
+                            "source": "stripe_checkout",
+                            "status": null,
+                            "createdAt": "2026-06-16T14:22:10.000Z"
+                          }
+                        ],
+                        "nextCursor": "9000"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing secret API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/verify/files": {
+      "post": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "Create bulk email validation job",
+        "description": "Upload a TXT, CSV, or XLSX file up to 90MB for bulk email validation. Credits are reserved from the detected email count, then reconciled as processing progresses.",
+        "operationId": "createBulkEmailValidation",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "TXT, CSV, or XLSX email list file."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Bulk email validation job created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BulkEmailValidationJob"
+                    }
+                  }
+                },
+                "examples": {
+                  "queued": {
+                    "summary": "Bulk validation job created",
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "id": "8a607588-1d7c-4d4f-9807-2a625fb20b14",
+                        "status": "QUEUED",
+                        "originalFilename": "emails_list_input.csv",
+                        "fileSizeBytes": 234,
+                        "localEmailCount": 6,
+                        "reservedCredits": 6,
+                        "confirmedEmailCount": null,
+                        "creditUsed": null,
+                        "valid": 0,
+                        "invalid": 0,
+                        "unknown": 0,
+                        "catchall": 0,
+                        "duplicates": 0,
+                        "spamTrap": 0,
+                        "toxicDomains": 0,
+                        "readyForDownload": false,
+                        "errorCode": null,
+                        "errorMessage": null,
+                        "lastValidationStatus": null,
+                        "createdAt": "2026-06-18T10:12:30.000Z",
+                        "updatedAt": "2026-06-18T10:13:10.000Z",
+                        "completedAt": null
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing secret API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Job state conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "List bulk email validation jobs",
+        "description": "List recent bulk email validation jobs for the project attached to the secret API key.",
+        "operationId": "listBulkEmailValidations",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search by original filename."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "QUEUED",
+                "UPLOADING",
+                "PROCESSING",
+                "COMPLETED",
+                "FAILED",
+                "ACTION_REQUIRED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bulk email validation jobs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BulkEmailValidationJobList"
+                    }
+                  }
+                },
+                "examples": {
+                  "jobs": {
+                    "summary": "Bulk validation jobs",
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "items": [
+                          {
+                            "id": "8a607588-1d7c-4d4f-9807-2a625fb20b14",
+                            "status": "COMPLETED",
+                            "originalFilename": "emails_list_input.csv",
+                            "fileSizeBytes": 234,
+                            "localEmailCount": 6,
+                            "reservedCredits": 3,
+                            "confirmedEmailCount": 6,
+                            "creditUsed": 3,
+                            "valid": 2,
+                            "invalid": 1,
+                            "unknown": 0,
+                            "catchall": 0,
+                            "duplicates": 2,
+                            "spamTrap": 0,
+                            "toxicDomains": 0,
+                            "readyForDownload": true,
+                            "errorCode": null,
+                            "errorMessage": null,
+                            "lastValidationStatus": "finished",
+                            "createdAt": "2026-06-18T10:12:30.000Z",
+                            "updatedAt": "2026-06-18T10:14:05.000Z",
+                            "completedAt": "2026-06-18T10:14:05.000Z"
+                          },
+                          {
+                            "id": "8a607588-1d7c-4d4f-9807-2a625fb20b14",
+                            "status": "PROCESSING",
+                            "originalFilename": "emails_list_input.csv",
+                            "fileSizeBytes": 234,
+                            "localEmailCount": 6,
+                            "reservedCredits": 6,
+                            "confirmedEmailCount": 6,
+                            "creditUsed": null,
+                            "valid": 2,
+                            "invalid": 1,
+                            "unknown": 0,
+                            "catchall": 0,
+                            "duplicates": 2,
+                            "spamTrap": 0,
+                            "toxicDomains": 0,
+                            "readyForDownload": false,
+                            "errorCode": null,
+                            "errorMessage": null,
+                            "lastValidationStatus": "Started Processing",
+                            "createdAt": "2026-06-18T10:12:30.000Z",
+                            "updatedAt": "2026-06-18T10:13:10.000Z",
+                            "completedAt": null
+                          }
+                        ],
+                        "nextCursor": null
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing secret API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/verify/files/{jobId}": {
+      "get": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "Get bulk email validation job",
+        "operationId": "getBulkEmailValidation",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bulk email validation job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BulkEmailValidationJob"
+                    }
+                  }
+                },
+                "examples": {
+                  "completed": {
+                    "summary": "Completed bulk validation job",
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "id": "8a607588-1d7c-4d4f-9807-2a625fb20b14",
+                        "status": "COMPLETED",
+                        "originalFilename": "emails_list_input.csv",
+                        "fileSizeBytes": 234,
+                        "localEmailCount": 6,
+                        "reservedCredits": 3,
+                        "confirmedEmailCount": 6,
+                        "creditUsed": 3,
+                        "valid": 2,
+                        "invalid": 1,
+                        "unknown": 0,
+                        "catchall": 0,
+                        "duplicates": 2,
+                        "spamTrap": 0,
+                        "toxicDomains": 0,
+                        "readyForDownload": true,
+                        "errorCode": null,
+                        "errorMessage": null,
+                        "lastValidationStatus": "finished",
+                        "createdAt": "2026-06-18T10:12:30.000Z",
+                        "updatedAt": "2026-06-18T10:14:05.000Z",
+                        "completedAt": "2026-06-18T10:14:05.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing secret API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "Delete bulk email validation job",
+        "operationId": "deleteBulkEmailValidation",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "Delete a bulk email validation job when it is not actively uploading or processing. If the file was not submitted for processing, reserved credits are refunded.",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted job summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "refundedCredits": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "deleted": {
+                    "summary": "Deleted bulk validation job",
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "refundedCredits": 6
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing secret API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Job state conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/verify/files/{jobId}/continue": {
+      "post": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "Continue bulk email validation job",
+        "operationId": "continueBulkEmailValidation",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "Continue a queued or action-required bulk validation job after credits are available.",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated bulk email validation job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BulkEmailValidationJob"
+                    }
+                  }
+                },
+                "examples": {
+                  "continued": {
+                    "summary": "Continued bulk validation job",
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "id": "8a607588-1d7c-4d4f-9807-2a625fb20b14",
+                        "status": "QUEUED",
+                        "originalFilename": "emails_list_input.csv",
+                        "fileSizeBytes": 234,
+                        "localEmailCount": 6,
+                        "reservedCredits": 6,
+                        "confirmedEmailCount": null,
+                        "creditUsed": null,
+                        "valid": 0,
+                        "invalid": 0,
+                        "unknown": 0,
+                        "catchall": 0,
+                        "duplicates": 0,
+                        "spamTrap": 0,
+                        "toxicDomains": 0,
+                        "readyForDownload": false,
+                        "errorCode": null,
+                        "errorMessage": null,
+                        "lastValidationStatus": null,
+                        "createdAt": "2026-06-18T10:12:30.000Z",
+                        "updatedAt": "2026-06-18T10:13:10.000Z",
+                        "completedAt": null
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing secret API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Job state conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/verify/files/{jobId}/download": {
+      "get": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "Download bulk email validation results",
+        "operationId": "downloadBulkEmailValidationResults",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "Download completed validation results. Filtered downloads are CSV only; XLS is supported only for all results.",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "valid",
+                "invalid",
+                "unknown",
+                "catchall"
+              ],
+              "default": "all"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "csv",
+                "xls"
+              ],
+              "default": "csv"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Result file stream",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing secret API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Job state conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Result download unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
