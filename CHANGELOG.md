@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/MailGlyph/mailglyph-go/compare/v1.2.0...v1.3.0) (2026-06-19)
+
+
+### Features
+
+* Email validation ([d5e444d](https://github.com/MailGlyph/mailglyph-go/commit/d5e444d8ff878bc878465f355642e7a40ee2a921))
+
 ## [1.2.0](https://github.com/MailGlyph/mailglyph-go/compare/v1.1.0...v1.2.0) (2026-03-26)
 
 
